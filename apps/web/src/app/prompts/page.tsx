@@ -1,6 +1,7 @@
 import { PromptFlowError, type PromptMeta } from "@promptflow/core";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
@@ -52,6 +53,9 @@ export default async function PromptsPage({
             {prompts.length} {prompts.length === 1 ? "prompt" : "prompts"} in this Langfuse project.
           </p>
         </div>
+        <Link href="/prompts/new" className={buttonVariants()}>
+          + New prompt
+        </Link>
       </header>
 
       <form className="flex flex-wrap items-center gap-3 mb-6">
@@ -178,9 +182,11 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
     <Card className="p-10 text-center space-y-3">
       <h2 className="font-medium">No prompts yet</h2>
       <p className="text-sm text-muted-foreground max-w-md mx-auto">
-        Your Langfuse project is connected but empty. Create your first prompt in the Langfuse
-        dashboard, or use AIPlay (coming soon) to author one and save it back.
+        Your Langfuse project is connected but empty.
       </p>
+      <Link href="/prompts/new" className={`${buttonVariants()} mt-4`}>
+        Create your first prompt
+      </Link>
     </Card>
   );
 }

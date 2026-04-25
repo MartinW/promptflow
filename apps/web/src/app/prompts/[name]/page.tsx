@@ -1,7 +1,9 @@
 import { extractVariables, type Prompt, PromptFlowError } from "@promptflow/core";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DiffViewer } from "@/components/diff-viewer";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
@@ -46,6 +48,11 @@ export default async function PromptDetailPage({
   const allVersions = await loadAllVersions(name).catch(() => null);
   const versions = allVersions?.versions ?? [prompt.version];
   const variables = prompt.type === "text" ? extractVariables(prompt.prompt) : [];
+  const latestVersion = Math.max(...versions);
+  const showDiffAgainstLatest = prompt.type === "text" && prompt.version < latestVersion;
+  const latestPrompt = showDiffAgainstLatest
+    ? await client.getPrompt(name, { version: latestVersion }).catch(() => null)
+    : null;
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -56,7 +63,21 @@ export default async function PromptDetailPage({
       </nav>
 
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight font-mono">{prompt.name}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-semibold tracking-tight font-mono break-all">
+            {prompt.name}
+          </h1>
+          {prompt.type === "text" ? (
+            <Link
+              href={`/prompts/${encodedName}/edit${
+                requestedVersion ? `?from=${requestedVersion}` : ""
+              }`}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Edit
+            </Link>
+          ) : null}
+        </div>
         <div className="flex flex-wrap items-center gap-3 mt-3">
           <Badge variant="secondary">v{prompt.version}</Badge>
           <Badge variant="outline">{prompt.type}</Badge>
@@ -101,6 +122,20 @@ export default async function PromptDetailPage({
                   </Badge>
                 ))}
               </div>
+            </section>
+          ) : null}
+
+          {prompt.type === "text" && latestPrompt && latestPrompt.type === "text" ? (
+            <section className="mt-6">
+              <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                Diff vs latest (v{latestPrompt.version})
+              </h2>
+              <DiffViewer
+                oldText={prompt.prompt}
+                newText={latestPrompt.prompt}
+                oldLabel={`v${prompt.version}`}
+                newLabel={`v${latestPrompt.version}`}
+              />
             </section>
           ) : null}
         </section>
