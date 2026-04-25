@@ -1,4 +1,4 @@
-import { Langfuse } from "langfuse";
+import { createClient, PromptFlowError } from "@promptflow/core";
 
 export type LangfuseStatus =
   | { kind: "unconfigured"; missing: string[] }
@@ -18,22 +18,16 @@ export async function checkLangfuse(): Promise<LangfuseStatus> {
   }
 
   try {
-    const client = new Langfuse({
-      publicKey,
-      secretKey,
-      baseUrl: host,
-    });
-    const result = await client.api.promptsList({});
-    return {
-      kind: "ok",
-      promptCount: result.data?.length ?? 0,
-      host,
-    };
+    const client = createClient({ publicKey, secretKey, host });
+    const prompts = await client.listPrompts({ limit: 100 });
+    return { kind: "ok", promptCount: prompts.length, host };
   } catch (err) {
-    return {
-      kind: "error",
-      message: err instanceof Error ? err.message : String(err),
-      host,
-    };
+    const message =
+      err instanceof PromptFlowError
+        ? `[${err.kind}] ${err.message}`
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    return { kind: "error", message, host };
   }
 }
