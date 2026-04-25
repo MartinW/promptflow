@@ -30,9 +30,7 @@ function StatusPanel({ status }: { status: Awaited<ReturnType<typeof checkLangfu
   if (status.kind === "unconfigured") {
     return (
       <div className="space-y-2">
-        <p className="text-amber-600 dark:text-amber-400 font-medium">
-          Not configured
-        </p>
+        <p className="text-amber-600 dark:text-amber-400 font-medium">Not configured</p>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Set the following environment variables to connect:
         </p>
@@ -47,12 +45,8 @@ function StatusPanel({ status }: { status: Awaited<ReturnType<typeof checkLangfu
   if (status.kind === "error") {
     return (
       <div className="space-y-2">
-        <p className="text-red-600 dark:text-red-400 font-medium">
-          Connection failed
-        </p>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400 break-all">
-          {status.message}
-        </p>
+        <p className="text-red-600 dark:text-red-400 font-medium">Connection failed</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 break-all">{status.message}</p>
         <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">
           Host: <span className="font-mono">{status.host}</span>
         </p>
@@ -61,9 +55,7 @@ function StatusPanel({ status }: { status: Awaited<ReturnType<typeof checkLangfu
   }
   return (
     <div className="space-y-2">
-      <p className="text-emerald-600 dark:text-emerald-400 font-medium">
-        Connected
-      </p>
+      <p className="text-emerald-600 dark:text-emerald-400 font-medium">Connected</p>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         {status.promptCount} {status.promptCount === 1 ? "prompt" : "prompts"} found.
       </p>

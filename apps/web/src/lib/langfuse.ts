@@ -13,14 +13,14 @@ export async function checkLangfuse(): Promise<LangfuseStatus> {
   const missing: string[] = [];
   if (!publicKey) missing.push("LANGFUSE_PUBLIC_KEY");
   if (!secretKey) missing.push("LANGFUSE_SECRET_KEY");
-  if (missing.length > 0) {
+  if (!publicKey || !secretKey) {
     return { kind: "unconfigured", missing };
   }
 
   try {
     const client = new Langfuse({
-      publicKey: publicKey!,
-      secretKey: secretKey!,
+      publicKey,
+      secretKey,
       baseUrl: host,
     });
     const result = await client.api.promptsList({});
