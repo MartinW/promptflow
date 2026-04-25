@@ -68,14 +68,24 @@ export default async function PromptDetailPage({
             {prompt.name}
           </h1>
           {prompt.type === "text" ? (
-            <Link
-              href={`/prompts/${encodedName}/edit${
-                requestedVersion ? `?from=${requestedVersion}` : ""
-              }`}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              Edit
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/prompts/${encodedName}/play${
+                  requestedVersion ? `?v=${requestedVersion}` : ""
+                }`}
+                className={buttonVariants()}
+              >
+                ▶ AIPlay
+              </Link>
+              <Link
+                href={`/prompts/${encodedName}/edit${
+                  requestedVersion ? `?from=${requestedVersion}` : ""
+                }`}
+                className={buttonVariants({ variant: "outline" })}
+              >
+                Edit
+              </Link>
+            </div>
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-3">
