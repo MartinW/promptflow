@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import { AppHeader } from "@/components/app-header";
+import { CommandPalette } from "@/components/command-palette";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,6 +30,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <AppHeader />
         <div className="flex-1">{children}</div>
+        <CommandPalette />
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );

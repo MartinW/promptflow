@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { PromptEditor } from "@/components/prompt-editor";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,6 +25,11 @@ export function NewPromptForm() {
       if (!result.ok) {
         setError(result.error ?? null);
         setFieldErrors(result.fieldErrors ?? {});
+        toast.error("Couldn't create prompt", {
+          description: result.error ?? "Check the form for issues",
+        });
+      } else {
+        toast.success("Prompt created");
       }
     });
   }

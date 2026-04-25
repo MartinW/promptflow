@@ -18,9 +18,14 @@ export async function AppHeader() {
             </Link>
           </nav>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className={`size-2 rounded-full ${indicator.dot}`} />
-          <span>{indicator.label}</span>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 font-mono text-[0.7rem]">
+            ⌘K
+          </kbd>
+          <div className="flex items-center gap-2">
+            <span className={`size-2 rounded-full ${indicator.dot}`} />
+            <span>{indicator.label}</span>
+          </div>
         </div>
       </div>
     </header>
