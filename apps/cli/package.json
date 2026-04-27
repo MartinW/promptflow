@@ -4,6 +4,21 @@
   "private": false,
   "description": "Command-line access to your Langfuse prompts via PromptFlow conventions",
   "license": "MIT",
+  "homepage": "https://github.com/MartinW/promptflow#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MartinW/promptflow.git",
+    "directory": "apps/cli"
+  },
+  "bugs": "https://github.com/MartinW/promptflow/issues",
+  "keywords": [
+    "langfuse",
+    "prompt",
+    "promptflow",
+    "cli",
+    "llm",
+    "openrouter"
+  ],
   "type": "module",
   "bin": {
     "promptflow": "./dist/index.js"

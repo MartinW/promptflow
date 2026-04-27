@@ -4,6 +4,22 @@
   "private": false,
   "description": "Model Context Protocol server exposing your Langfuse prompts to MCP clients (Claude Desktop, Claude Code, Cursor)",
   "license": "MIT",
+  "homepage": "https://github.com/MartinW/promptflow#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MartinW/promptflow.git",
+    "directory": "apps/mcp-server"
+  },
+  "bugs": "https://github.com/MartinW/promptflow/issues",
+  "keywords": [
+    "langfuse",
+    "prompt",
+    "promptflow",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "cursor"
+  ],
   "type": "module",
   "bin": {
     "promptflow-mcp": "./dist/index.js"

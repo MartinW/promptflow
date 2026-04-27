@@ -6,7 +6,15 @@ PromptFlow is a frontend for the prompt-management half of Langfuse, with the UX
 
 Langfuse is the storage layer; PromptFlow is the editor for it. The same prompts get consumed by separate iOS apps (different repos) to demonstrate remote prompt management for production apps.
 
-> 🚧 In active development. Sprint week 1 ships the OSS web app; Pro tier and CLI/MCP land in week 2; iOS apps in week 3.
+> 🚧 In active development. Web app + CLI + MCP server are live; Pro tier (auth, evals, A/B) and iOS apps coming.
+
+## Ecosystem
+
+Three published surfaces, one prompt registry:
+
+- **Web** — `apps/web`, deployed at [promptflow-five.vercel.app](https://promptflow-five.vercel.app).
+- **CLI** — [`@promptflow/cli`](apps/cli) — `npx @promptflow/cli prompts list`. Manage prompts from the terminal.
+- **MCP server** — [`@promptflow/mcp-server`](apps/mcp-server) — register with Claude Desktop / Claude Code / Cursor, your prompts become invocable MCP Prompts.
 
 ## Architecture
 
@@ -62,19 +70,27 @@ Both Langfuse and OpenRouter are bring-your-own-keys. Set in `apps/web/.env.loca
 
 If any keys are missing, the app renders graceful "not configured" states instead of crashing.
 
-## Features (week 1)
+## Features
 
-- ✅ Bun monorepo with Turborepo
-- ✅ `@promptflow/core` — typed Langfuse wrapper, tag conventions, validators, renderer (45 tests)
-- ✅ Prompt list with tag filtering and search
-- ✅ Prompt detail with version history sidebar, config display, variable extraction
-- ✅ Inline diff vs latest when viewing older versions
-- ✅ Create new prompts via server action
-- ✅ Edit creates a new version (production label)
-- ✅ AIPlay playground — OpenRouter SSE streaming, live token/cost/latency, every available model
-- ✅ Cmd-K command palette (lazy-loaded prompt index)
-- ✅ Toast notifications for create/edit
-- ✅ Biome lint+format (zero warnings)
+**Web** (`apps/web`)
+- Prompt list with tag filtering, search, version sidebar, inline diff, Cmd-K palette
+- Compose editor with optional System Prompt + User Context fields; saves text-vs-chat type automatically
+- AIPlay playground — OpenRouter SSE streaming, live token/cost/latency, provider-grouped model picker
+- Drafts by default — explicit "Promote to production" checkbox
+
+**CLI** (`@promptflow/cli`)
+- `prompts list / get / pull / push / run / diff` and `auth` for credential management
+- Streams `prompts run` output through OpenRouter
+- Round-trip JSON pull → edit → push to author prompts as files
+
+**MCP server** (`@promptflow/mcp-server`)
+- Langfuse prompts mapped to MCP **Prompts** so host LLMs can invoke them by name
+- 6 tools: `list_prompts`, `search_prompts`, `get_prompt_metadata`, `render_prompt`, `refresh_prompts`, `run_prompt`
+- In-memory cache with stale-while-revalidate
+
+**`@promptflow/core`** (private workspace package)
+- Typed Langfuse client wrapper, tag namespace utilities, template validation + variable substitution
+- 45 Vitest unit tests
 
 ## Roadmap
 
@@ -83,8 +99,8 @@ If any keys are missing, the app renders graceful "not configured" states instea
 - [ ] Auth + multi-tenancy (`ee/` directory under BSL 1.1)
 - [ ] Eval datasets, eval runs, LLM-as-judge — *needs a dedicated design pass before implementation*
 - [ ] A/B comparison with paired t-test + bootstrap CIs
-- [ ] CLI (`@promptflow/cli` on npm)
-- [ ] MCP server exposing Langfuse prompts as MCP Prompts (Claude Desktop / Code / Cursor compatible)
+- [x] CLI (`@promptflow/cli` on npm)
+- [x] MCP server exposing Langfuse prompts as MCP Prompts (Claude Desktop / Code / Cursor compatible)
 - [ ] OpenTelemetry instrumentation + Grafana dashboard
 
 **Week 3 — Mobile + portfolio**
