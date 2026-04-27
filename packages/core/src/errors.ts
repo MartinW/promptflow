@@ -40,6 +40,17 @@ export class PromptFlowError extends Error {
 export function wrapError(err: unknown): PromptFlowError {
   if (err instanceof PromptFlowError) return err;
 
+  // Langfuse's SDK throws raw fetch `Response` objects on HTTP errors;
+  // their default `String()` is `[object Response]`, which is useless.
+  // Surface the status text + url instead.
+  if (typeof Response !== "undefined" && err instanceof Response) {
+    return new PromptFlowError(
+      mapStatusToKind(err.status),
+      `Langfuse ${err.status} ${err.statusText || ""} (${err.url})`.trim(),
+      { cause: err, status: err.status },
+    );
+  }
+
   const message = err instanceof Error ? err.message : String(err);
   const status = extractStatus(err);
 
@@ -71,6 +82,14 @@ export function wrapError(err: unknown): PromptFlowError {
     return new PromptFlowError("network", message, { cause: err });
   }
   return new PromptFlowError("unknown", message, { cause: err, status });
+}
+
+function mapStatusToKind(status: number): PromptFlowErrorKind {
+  if (status === 401 || status === 403) return "auth";
+  if (status === 404) return "not_found";
+  if (status === 429) return "rate_limit";
+  if (status >= 500) return "network";
+  return "unknown";
 }
 
 function extractStatus(err: unknown): number | undefined {

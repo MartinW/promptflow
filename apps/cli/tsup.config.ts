@@ -1,0 +1,15 @@
+import { defineConfig } from "tsup";
+
+export default defineConfig({
+  entry: ["src/index.ts"],
+  format: ["esm"],
+  target: "node20",
+  clean: true,
+  splitting: false,
+  shims: true,
+  banner: {
+    js: "#!/usr/bin/env node",
+  },
+  // Bundle workspace deps; keep node_modules consumers external.
+  noExternal: ["@promptflow/core"],
+});
