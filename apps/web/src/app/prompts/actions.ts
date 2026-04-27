@@ -18,6 +18,7 @@ export async function createPromptAction(formData: FormData): Promise<CreateProm
   const body = String(formData.get("body") ?? "");
   const tagsRaw = String(formData.get("tags") ?? "");
   const commitMessage = String(formData.get("commitMessage") ?? "").trim();
+  const promote = formData.get("promote") === "on";
 
   const fieldErrors: Record<string, string> = {};
   if (!name) {
@@ -41,6 +42,7 @@ export async function createPromptAction(formData: FormData): Promise<CreateProm
       name,
       prompt: body,
       tags,
+      labels: promote ? ["production"] : undefined,
       commitMessage: commitMessage || undefined,
     });
   } catch (err) {
@@ -65,6 +67,7 @@ export async function updatePromptAction(formData: FormData): Promise<CreateProm
   const body = String(formData.get("body") ?? "");
   const tagsRaw = String(formData.get("tags") ?? "");
   const commitMessage = String(formData.get("commitMessage") ?? "").trim();
+  const promote = formData.get("promote") === "on";
 
   if (!name) {
     return { ok: false, error: "Missing prompt name" };
@@ -82,7 +85,7 @@ export async function updatePromptAction(formData: FormData): Promise<CreateProm
       name,
       prompt: body,
       tags,
-      labels: ["production"],
+      labels: promote ? ["production"] : undefined,
       commitMessage: commitMessage || undefined,
     });
   } catch (err) {

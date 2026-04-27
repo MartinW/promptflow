@@ -12,6 +12,7 @@ export function NewPromptForm() {
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
+  const [promote, setPromote] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
@@ -28,7 +29,9 @@ export function NewPromptForm() {
           description: result.error ?? "Check the form for issues",
         });
       } else {
-        toast.success("Prompt created");
+        toast.success(
+          promote ? "Prompt created · promoted to production" : "Prompt created · draft",
+        );
       }
     });
   }
@@ -73,6 +76,23 @@ export function NewPromptForm() {
             disabled={pending}
           />
         </Field>
+
+        <label className="flex items-start gap-3 pt-1 cursor-pointer">
+          <input
+            type="checkbox"
+            name="promote"
+            checked={promote}
+            onChange={(e) => setPromote(e.target.checked)}
+            disabled={pending}
+            className="mt-1 size-4 accent-primary"
+          />
+          <span className="text-sm">
+            <span className="font-medium block">Promote to production</span>
+            <span className="text-xs text-muted-foreground">
+              Off by default. Saves as a draft version with no labels — promote later when ready.
+            </span>
+          </span>
+        </label>
       </Card>
 
       {error ? (

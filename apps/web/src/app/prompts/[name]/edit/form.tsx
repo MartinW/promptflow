@@ -19,6 +19,7 @@ export function EditPromptForm({ name, initialBody, initialTags, baseVersion }: 
   const [body, setBody] = useState(initialBody);
   const [tags, setTags] = useState(initialTags);
   const [commit, setCommit] = useState("");
+  const [promote, setPromote] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
@@ -35,7 +36,11 @@ export function EditPromptForm({ name, initialBody, initialTags, baseVersion }: 
           description: result.error ?? "Check the form for issues",
         });
       } else {
-        toast.success(`Saved as v${baseVersion + 1}`);
+        toast.success(
+          promote
+            ? `Saved as v${baseVersion + 1} · promoted to production`
+            : `Saved as v${baseVersion + 1} · draft`,
+        );
       }
     });
   }
@@ -90,6 +95,23 @@ export function EditPromptForm({ name, initialBody, initialTags, baseVersion }: 
             placeholder="Tighten the system prompt"
           />
         </div>
+
+        <label className="flex items-start gap-3 pt-1 cursor-pointer">
+          <input
+            type="checkbox"
+            name="promote"
+            checked={promote}
+            onChange={(e) => setPromote(e.target.checked)}
+            disabled={pending}
+            className="mt-1 size-4 accent-primary"
+          />
+          <span className="text-sm">
+            <span className="font-medium block">Promote to production</span>
+            <span className="text-xs text-muted-foreground">
+              Off by default — saves as a draft. Tick to make this version the production label.
+            </span>
+          </span>
+        </label>
       </Card>
 
       {error ? (
