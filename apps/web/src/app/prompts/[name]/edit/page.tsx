@@ -1,6 +1,8 @@
 import { PromptFlowError } from "@promptflow/core";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Card } from "@/components/ui/card";
+import { parsePromptToShape } from "@/lib/prompt-shape";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
 import { EditPromptForm } from "./form";
 
@@ -23,29 +25,42 @@ export default async function EditPromptPage({
   const baseVersion = from ? Number.parseInt(from, 10) : undefined;
 
   const client = getServerClient();
-  let body = "";
-  let tags: string[] = [];
+  let parsed: ReturnType<typeof parsePromptToShape>;
   let currentVersion = 0;
+  let initialTags: string[] = [];
   try {
     const prompt = await client.getPrompt(name, { version: baseVersion });
-    if (prompt.type !== "text") {
-      return (
-        <main className="mx-auto max-w-2xl px-6 py-20 text-center text-sm text-muted-foreground">
-          Editing chat prompts isn't supported yet.{" "}
-          <Link href={`/prompts/${encodedName}`} className="underline">
-            Go back
-          </Link>
-        </main>
-      );
-    }
-    body = prompt.prompt;
-    tags = prompt.tags;
+    parsed = parsePromptToShape(prompt);
     currentVersion = prompt.version;
+    initialTags = prompt.tags;
   } catch (err) {
     if (err instanceof PromptFlowError && err.kind === "not_found") {
       notFound();
     }
     throw err;
+  }
+
+  if (parsed.kind === "unsupported") {
+    return (
+      <main className="mx-auto max-w-2xl px-6 py-20">
+        <nav className="text-sm mb-4">
+          <Link
+            href={`/prompts/${encodedName}`}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            ← {name}
+          </Link>
+        </nav>
+        <Card className="p-6 space-y-3 border-amber-500/30 bg-amber-500/5">
+          <h1 className="text-lg font-semibold">Can't edit this prompt here</h1>
+          <p className="text-sm text-muted-foreground">{parsed.reason}</p>
+          <p className="text-sm text-muted-foreground">
+            Edit it in the Langfuse dashboard for now — multi-turn / placeholder support in
+            PromptFlow's editor is on the roadmap.
+          </p>
+        </Card>
+      </main>
+    );
   }
 
   return (
@@ -61,14 +76,14 @@ export default async function EditPromptPage({
       <header className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight">Edit prompt</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Saving creates a new version (current is v{currentVersion}). The new version becomes the
-          production label.
+          Saving creates a new version (current is v{currentVersion}). Tick "Promote to production"
+          to make this version the live one.
         </p>
       </header>
       <EditPromptForm
         name={name}
-        initialBody={body}
-        initialTags={tags.join(", ")}
+        initialShape={parsed.shape}
+        initialTags={initialTags.join(", ")}
         baseVersion={currentVersion}
       />
     </main>

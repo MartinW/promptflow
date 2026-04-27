@@ -2,21 +2,22 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { PromptEditor } from "@/components/prompt-editor";
+import { PromptComposeEditor } from "@/components/prompt-compose-editor";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type { ComposeShape } from "@/lib/prompt-shape";
 import { updatePromptAction } from "../../actions";
 
 interface Props {
   name: string;
-  initialBody: string;
+  initialShape: ComposeShape;
   initialTags: string;
   baseVersion: number;
 }
 
-export function EditPromptForm({ name, initialBody, initialTags, baseVersion }: Props) {
-  const [body, setBody] = useState(initialBody);
+export function EditPromptForm({ name, initialShape, initialTags, baseVersion }: Props) {
+  const [shape, setShape] = useState<ComposeShape>(initialShape);
   const [tags, setTags] = useState(initialTags);
   const [commit, setCommit] = useState("");
   const [promote, setPromote] = useState(false);
@@ -24,11 +25,21 @@ export function EditPromptForm({ name, initialBody, initialTags, baseVersion }: 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
 
-  function onSubmit(formData: FormData) {
+  function onSubmit() {
     setError(null);
     setFieldErrors({});
+
+    const fd = new FormData();
+    fd.set("name", name);
+    fd.set("system", shape.system);
+    fd.set("userContext", shape.userContext);
+    fd.set("main", shape.main);
+    fd.set("tags", tags);
+    fd.set("commitMessage", commit);
+    if (promote) fd.set("promote", "on");
+
     startTransition(async () => {
-      const result = await updatePromptAction(formData);
+      const result = await updatePromptAction(fd);
       if (!result.ok) {
         setError(result.error ?? null);
         setFieldErrors(result.fieldErrors ?? {});
@@ -45,12 +56,14 @@ export function EditPromptForm({ name, initialBody, initialTags, baseVersion }: 
     });
   }
 
-  const dirty = body !== initialBody || tags !== initialTags;
+  const dirty =
+    shape.system !== initialShape.system ||
+    shape.userContext !== initialShape.userContext ||
+    shape.main !== initialShape.main ||
+    tags !== initialTags;
 
   return (
     <form action={onSubmit} className="space-y-6">
-      <input type="hidden" name="name" value={name} />
-
       <Card className="p-5 space-y-5">
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
@@ -60,7 +73,12 @@ export function EditPromptForm({ name, initialBody, initialTags, baseVersion }: 
               {dirty ? " · modified" : ""}
             </span>
           </div>
-          <PromptEditor name="body" value={body} onChange={setBody} disabled={pending} />
+          <PromptComposeEditor
+            value={shape}
+            onChange={setShape}
+            disabled={pending}
+            forceShowFilled
+          />
           {fieldErrors.body ? (
             <p className="text-xs text-red-600 dark:text-red-400">{fieldErrors.body}</p>
           ) : null}

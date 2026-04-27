@@ -2,26 +2,38 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { PromptEditor } from "@/components/prompt-editor";
+import { PromptComposeEditor } from "@/components/prompt-compose-editor";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type { ComposeShape } from "@/lib/prompt-shape";
 import { createPromptAction } from "../actions";
+
+const EMPTY_SHAPE: ComposeShape = { system: "", userContext: "", main: "" };
 
 export function NewPromptForm() {
   const [name, setName] = useState("");
-  const [body, setBody] = useState("");
+  const [shape, setShape] = useState<ComposeShape>(EMPTY_SHAPE);
   const [tags, setTags] = useState("");
   const [promote, setPromote] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
 
-  function onSubmit(formData: FormData) {
+  function onSubmit() {
     setError(null);
     setFieldErrors({});
+
+    const fd = new FormData();
+    fd.set("name", name);
+    fd.set("system", shape.system);
+    fd.set("userContext", shape.userContext);
+    fd.set("main", shape.main);
+    fd.set("tags", tags);
+    if (promote) fd.set("promote", "on");
+
     startTransition(async () => {
-      const result = await createPromptAction(formData);
+      const result = await createPromptAction(fd);
       if (!result.ok) {
         setError(result.error ?? null);
         setFieldErrors(result.fieldErrors ?? {});
@@ -55,13 +67,7 @@ export function NewPromptForm() {
         </Field>
 
         <Field label="Body" error={fieldErrors.body}>
-          <PromptEditor
-            name="body"
-            value={body}
-            onChange={setBody}
-            disabled={pending}
-            placeholder="You are a helpful assistant. Greet {{name}} warmly."
-          />
+          <PromptComposeEditor value={shape} onChange={setShape} disabled={pending} />
         </Field>
 
         <Field
