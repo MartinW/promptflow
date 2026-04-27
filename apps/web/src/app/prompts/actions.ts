@@ -41,7 +41,6 @@ export async function createPromptAction(formData: FormData): Promise<CreateProm
       name,
       prompt: body,
       tags,
-      labels: ["production"],
       commitMessage: commitMessage || undefined,
     });
   } catch (err) {

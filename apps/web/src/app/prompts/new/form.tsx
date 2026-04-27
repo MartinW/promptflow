@@ -12,7 +12,6 @@ export function NewPromptForm() {
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
-  const [commit, setCommit] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
@@ -71,16 +70,6 @@ export function NewPromptForm() {
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="voice, env:prod"
-            disabled={pending}
-          />
-        </Field>
-
-        <Field label="Commit message" hint="Optional. Describes what this version changes.">
-          <Input
-            name="commitMessage"
-            value={commit}
-            onChange={(e) => setCommit(e.target.value)}
-            placeholder="Initial version"
             disabled={pending}
           />
         </Field>
