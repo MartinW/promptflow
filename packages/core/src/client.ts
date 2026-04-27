@@ -28,7 +28,18 @@ export interface PromptFlowClient {
   /** List prompts (metadata only — no body, no full version history). */
   listPrompts(filter?: ListPromptsFilter): Promise<PromptMeta[]>;
 
-  /** Get a specific prompt + version. Defaults to the `production` label. */
+  /**
+   * Get a specific prompt version.
+   *
+   * Resolution order:
+   *   - If `version` is given, fetches that exact version.
+   *   - Else if `label` is given, fetches the version carrying that label.
+   *   - Else defaults to `label: "latest"` (Langfuse auto-applies "latest" to
+   *     the most recent version, so this works even for draft-only prompts).
+   *
+   * Runtime apps that should only pull live prompts must pass
+   * `{ label: "production" }` explicitly.
+   */
   getPrompt(name: string, opts?: { version?: number; label?: string }): Promise<Prompt>;
 
   /**
@@ -71,11 +82,17 @@ export function createClient(config: ClientConfig): PromptFlowClient {
     },
 
     async getPrompt(name, opts = {}): Promise<Prompt> {
+      // When the caller doesn't pin a version or label, prefer the auto-applied
+      // `latest` label over Langfuse's server-side default (`production`). This
+      // means draft prompts (no production label) are still resolvable by name
+      // — important for the editor UI; the live runtime path should pass
+      // `{ label: "production" }` explicitly.
+      const label = opts.version === undefined && opts.label === undefined ? "latest" : opts.label;
       try {
         const result = await sdk.api.promptsGet({
           promptName: name,
           version: opts.version,
-          label: opts.label,
+          label,
         });
         return result as unknown as Prompt;
       } catch (err) {
