@@ -6,6 +6,8 @@ Command-line access to your [Langfuse](https://langfuse.com) prompts via [Prompt
 npx @promptflow/cli prompts list
 ```
 
+> **Status:** built and tested locally; not yet published to npm. The `npx` invocation above is the intended install path; until publishing, use the [build-from-source](#build-from-source) instructions.
+
 ## Install
 
 Either run on demand via `npx @promptflow/cli`, or install globally:
@@ -14,6 +16,20 @@ Either run on demand via `npx @promptflow/cli`, or install globally:
 npm i -g @promptflow/cli
 # or: bun add -g @promptflow/cli
 promptflow --help
+```
+
+### Build from source
+
+While the package is unpublished, build it from the monorepo:
+
+```bash
+git clone https://github.com/MartinW/promptflow.git
+cd promptflow
+bun install
+bunx turbo run build --filter=cli
+node apps/cli/dist/index.js --help
+# Optional alias:
+alias pf='node /absolute/path/to/promptflow/apps/cli/dist/index.js'
 ```
 
 ## Configure

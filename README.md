@@ -6,41 +6,42 @@ PromptFlow is a frontend for the prompt-management half of Langfuse, with the UX
 
 Langfuse is the storage layer; PromptFlow is the editor for it. The same prompts get consumed by separate iOS apps (different repos) to demonstrate remote prompt management for production apps.
 
-> 🚧 In active development. Web app + CLI + MCP server are live; Pro tier (auth, evals, A/B) and iOS apps coming.
+> 🚧 In active development. Web app + CLI + MCP server + first iOS consumer (Cadence) are live. Pro tier (auth, evals, A/B) and the second iOS app are next.
 
 ## Ecosystem
 
-Three published surfaces, one prompt registry:
+One Langfuse-backed prompt registry, multiple consumers:
 
-- **Web** — `apps/web`, deployed at [promptflow-five.vercel.app](https://promptflow-five.vercel.app).
-- **CLI** — [`@promptflow/cli`](apps/cli) — `npx @promptflow/cli prompts list`. Manage prompts from the terminal.
-- **MCP server** — [`@promptflow/mcp-server`](apps/mcp-server) — register with Claude Desktop / Claude Code / Cursor, your prompts become invocable MCP Prompts.
+- **Web** — `apps/web`, deployed at [promptflow-five.vercel.app](https://promptflow-five.vercel.app). Authoring UI.
+- **CLI** — [`@promptflow/cli`](apps/cli) — `bun run --filter cli dev prompts list` today, `npx @promptflow/cli prompts list` once published. Manage prompts from the terminal.
+- **MCP server** — [`@promptflow/mcp-server`](apps/mcp-server) — register with Claude Desktop / Claude Code / Cursor; your prompts become invocable MCP Prompts.
+- **Cadence** (iOS) — [github.com/MartinW/cadence](https://github.com/MartinW/cadence). Reads `voice:*` tagged prompts aloud via streamed audio (`openai/gpt-4o-audio-preview` through OpenRouter). Demonstrates the "remote prompt management" thesis — edit in the web UI, behaviour changes in the app on next launch.
 
 ## Architecture
 
 ```
-   ┌─────────────────────────────────────────────────────────────┐
-   │  apps/web (Next.js 16, React 19, Tailwind 4, shadcn)        │
-   │  ─ /prompts             list + tag filter + Cmd-K palette   │
-   │  ─ /prompts/new         create (server action)              │
-   │  ─ /prompts/[name]      detail + version history + diff     │
-   │  ─ /prompts/[name]/edit new-version form                    │
-   │  ─ /prompts/[name]/play AIPlay: streaming SSE through       │
-   │                         OpenRouter, all models, live cost   │
-   └──────────────────────┬──────────────────────────────────────┘
-                          │ uses
-   ┌──────────────────────▼──────────────────────────────────────┐
-   │  packages/core (MIT — shared logic, 45 tests)               │
-   │  ─ createClient()       typed Langfuse wrapper              │
-   │  ─ Tag namespace        voice / image / eval / app / ...    │
-   │  ─ validatePromptTemplate, validateSSML, renderPrompt       │
-   │  ─ PromptFlowError      kind: auth/not_found/network/...    │
-   └──────────────────────┬──────────────────────────────────────┘
-                          │ talks to
-                ┌─────────▼──────────┬──────────────┐
-                │   Langfuse API     │  OpenRouter  │
-                │   (BYO keys)       │  (BYO key)   │
-                └────────────────────┴──────────────┘
+   ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+   │  apps/web        │  │  apps/cli        │  │  apps/mcp-server │
+   │  (Next.js 16)    │  │  (Commander)     │  │  (MCP stdio)     │
+   │  Authoring UI    │  │  Terminal CRUD   │  │  Prompts as MCP  │
+   │  + AIPlay run    │  │  + run via OR    │  │  prompts/tools   │
+   └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘
+            │                     │                     │
+            └────────┬────────────┴──────┬──────────────┘
+                     │  consume          │
+   ┌─────────────────▼────────────────┐  │  Swift port mirrors
+   │  packages/core (MIT — 45 tests) │  │  in github.com/
+   │  ─ createClient()  Langfuse SDK │  │  MartinW/cadence
+   │  ─ Tag namespace   voice/image…  │  │  (separate repo)
+   │  ─ template + SSML validators    │  │
+   │  ─ PromptFlowError typed kinds   │  │
+   └─────────────────┬────────────────┘  │
+                     │ HTTPS              │ HTTPS
+                     ▼                    ▼
+          ┌──────────────────┐  ┌──────────────────┐
+          │  Langfuse API    │  │  OpenRouter      │
+          │  (BYO keys)      │  │  (Claude / GPT)  │
+          └──────────────────┘  └──────────────────┘
 ```
 
 ## Quickstart
@@ -105,8 +106,8 @@ If any keys are missing, the app renders graceful "not configured" states instea
 
 **Week 3 — Mobile + portfolio**
 
-- [ ] Voice iOS app (separate repo) — `voice:*` tagged prompts → ElevenLabs TTS
-- [ ] Image iOS app (separate repo) — `image:*` tagged prompts → Gemini 2.5 Flash Image
+- [x] Voice iOS app — [Cadence](https://github.com/MartinW/cadence). `voice:*` tagged prompts run through `openai/gpt-4o-audio-preview` (single-step audio completion via OpenRouter, since chat models have no verbatim-read mode). TestFlight build still pending.
+- [ ] Image iOS app (separate repo) — `image:*` tagged prompts → `google/gemini-2.5-flash-image`
 - [ ] Portfolio page tying everything together
 
 ## Tag conventions

@@ -4,6 +4,8 @@
 
 Authored prompts in [PromptFlow](https://github.com/MartinW/promptflow) become first-class MCP **Prompts** the host LLM can invoke by name.
 
+> **Status:** built and tested locally against Claude Code; not yet published to npm. Until publishing, point your MCP client at the locally-built bundle (`/absolute/path/to/promptflow/apps/mcp-server/dist/index.js`) instead of `npx`.
+
 ## Install + register
 
 You don't usually install this directly — register it with your MCP client and let `npx` pull it on demand.
@@ -41,6 +43,19 @@ claude mcp add promptflow npx -y @promptflow/mcp-server \
   -e LANGFUSE_PUBLIC_KEY=pk-lf-... \
   -e LANGFUSE_SECRET_KEY=sk-lf-... \
   -e LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+While the package is unpublished, replace the `npx` invocation with the locally-built bundle:
+
+```bash
+# In the promptflow checkout:
+bun install
+bunx turbo run build --filter=mcp-server
+
+# Then register:
+claude mcp add promptflow node /absolute/path/to/promptflow/apps/mcp-server/dist/index.js \
+  -e LANGFUSE_PUBLIC_KEY=pk-lf-... \
+  -e LANGFUSE_SECRET_KEY=sk-lf-...
 ```
 
 ### Cursor
