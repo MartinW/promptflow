@@ -1,0 +1,17 @@
+node_modules
+.bun
+.turbo
+.next
+apps/*/.next
+apps/*/.turbo
+apps/*/node_modules
+packages/*/node_modules
+packages/*/dist
+.git
+.DS_Store
+*.log
+coverage
+.env
+.env.local
+.env.*.local
+.vercel
