@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import type { ModelGroup } from "@/lib/openrouter";
 
 interface Props {
   promptName: string;
   version: number;
   body: string;
   variables: string[];
-  modelOptions: string[];
+  modelGroups: ModelGroup[];
 }
 
 interface DoneEvent {
@@ -29,11 +30,13 @@ interface DoneEvent {
 
 type RunEvent = { type: "token"; content: string } | DoneEvent | { type: "error"; message: string };
 
-export function AIPlay({ promptName, version, body, variables, modelOptions }: Props) {
+export function AIPlay({ promptName, version, body, variables, modelGroups }: Props) {
   const [varValues, setVarValues] = useState<Record<string, string>>(
     Object.fromEntries(variables.map((v) => [v, ""])),
   );
-  const [model, setModel] = useState<string>(modelOptions[0] ?? "openai/gpt-4o-mini");
+  const firstModelId =
+    modelGroups.find((g) => g.models.length > 0)?.models[0]?.id ?? "openai/gpt-4o-mini";
+  const [model, setModel] = useState<string>(firstModelId);
   const [output, setOutput] = useState<string>("");
   const [running, setRunning] = useState(false);
   const [summary, setSummary] = useState<DoneEvent | null>(null);
@@ -165,12 +168,7 @@ export function AIPlay({ promptName, version, body, variables, modelOptions }: P
             ))
           )}
           <Separator />
-          <ModelPicker
-            value={model}
-            options={modelOptions}
-            disabled={running}
-            onChange={setModel}
-          />
+          <ModelPicker value={model} groups={modelGroups} disabled={running} onChange={setModel} />
           <div className="flex justify-end gap-2">
             {running ? (
               <Button variant="outline" onClick={cancel}>
@@ -248,21 +246,27 @@ function VariableInput({
 
 function ModelPicker({
   value,
-  options,
+  groups,
   disabled,
   onChange,
 }: {
   value: string;
-  options: string[];
+  groups: ModelGroup[];
   disabled?: boolean;
   onChange: (next: string) => void;
 }) {
   const id = "aiplay-model";
+  const totalCount = groups.reduce((sum, g) => sum + g.models.length, 0);
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="text-sm font-medium block">
-        Model
-      </label>
+      <div className="flex items-baseline justify-between gap-2">
+        <label htmlFor={id} className="text-sm font-medium">
+          Model
+        </label>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {totalCount} available · price is $/M tokens (in/out)
+        </span>
+      </div>
       <select
         id={id}
         value={value}
@@ -270,10 +274,14 @@ function ModelPicker({
         disabled={disabled}
         className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        {options.map((m) => (
-          <option key={m} value={m}>
-            {m}
-          </option>
+        {groups.map((group) => (
+          <optgroup key={group.provider} label={group.provider}>
+            {group.models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {`${m.shortName} · ${m.contextLabel} · ${m.priceLabel}`}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
     </div>

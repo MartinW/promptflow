@@ -2,19 +2,68 @@ import { extractVariables, PromptFlowError } from "@promptflow/core";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { isOpenRouterConfigured, listOpenRouterModels } from "@/lib/openrouter";
+import {
+  groupModelsByProvider,
+  isOpenRouterConfigured,
+  listOpenRouterModels,
+  type ModelGroup,
+} from "@/lib/openrouter";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
 import { AIPlay } from "./aiplay";
 
 export const dynamic = "force-dynamic";
 
-const DEFAULT_MODELS = [
-  "openai/gpt-4o",
-  "openai/gpt-4o-mini",
-  "anthropic/claude-3.5-sonnet",
-  "anthropic/claude-3.5-haiku",
-  "google/gemini-2.0-flash-exp",
-  "meta-llama/llama-3.3-70b-instruct",
+const FALLBACK_GROUPS: ModelGroup[] = [
+  {
+    provider: "Anthropic",
+    models: [
+      {
+        id: "anthropic/claude-3.5-sonnet",
+        shortName: "claude-3.5-sonnet",
+        provider: "Anthropic",
+        contextLabel: "200k",
+        priceLabel: "$3/$15",
+      },
+      {
+        id: "anthropic/claude-3.5-haiku",
+        shortName: "claude-3.5-haiku",
+        provider: "Anthropic",
+        contextLabel: "200k",
+        priceLabel: "$0.80/$4",
+      },
+    ],
+  },
+  {
+    provider: "OpenAI",
+    models: [
+      {
+        id: "openai/gpt-4o",
+        shortName: "gpt-4o",
+        provider: "OpenAI",
+        contextLabel: "128k",
+        priceLabel: "$5/$15",
+      },
+      {
+        id: "openai/gpt-4o-mini",
+        shortName: "gpt-4o-mini",
+        provider: "OpenAI",
+        contextLabel: "128k",
+        priceLabel: "$0.15/$0.6",
+      },
+    ],
+  },
+  {
+    provider: "Google",
+    models: [
+      {
+        id: "google/gemini-2.0-flash-exp",
+        shortName: "gemini-2.0-flash-exp",
+        provider: "Google",
+        contextLabel: "1M",
+        priceLabel: "Free",
+      },
+    ],
+  },
 ];
 
 export default async function PlayPage({
@@ -59,7 +108,7 @@ export default async function PlayPage({
 
   const variables = extractVariables(body);
   const models = await listOpenRouterModels();
-  const modelOptions = models.length > 0 ? models.map((m) => m.id) : DEFAULT_MODELS;
+  const modelGroups = models.length > 0 ? groupModelsByProvider(models) : FALLBACK_GROUPS;
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-6">
@@ -95,7 +144,7 @@ export default async function PlayPage({
         version={version}
         body={body}
         variables={variables}
-        modelOptions={modelOptions}
+        modelGroups={modelGroups}
       />
     </main>
   );
