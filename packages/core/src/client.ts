@@ -117,7 +117,12 @@ export function createClient(config: ClientConfig): PromptFlowClient {
 
     async createPrompt(input: CreatePromptInput): Promise<Prompt> {
       try {
-        const result = await sdk.api.promptsCreate(input);
+        // ChatPromptMessage's `type: "chatmessage"` discriminator is optional
+        // (Langfuse strips it on read) but required by the SDK on write. We
+        // always set it in our save path, so the cast is safe at the boundary.
+        const result = await sdk.api.promptsCreate(
+          input as unknown as Parameters<typeof sdk.api.promptsCreate>[0],
+        );
         return result as unknown as Prompt;
       } catch (err) {
         throw wrapError(err);

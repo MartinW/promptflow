@@ -1,4 +1,4 @@
-import { extractVariables, type Prompt, PromptFlowError } from "@promptflow/core";
+import { extractVariables, isPlaceholder, type Prompt, PromptFlowError } from "@promptflow/core";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DiffViewer } from "@/components/diff-viewer";
@@ -192,23 +192,28 @@ export default async function PromptDetailPage({
 function ChatBody({ prompt }: { prompt: Extract<Prompt, { type: "chat" }> }) {
   return (
     <div className="space-y-4">
-      {prompt.prompt.map((msg, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: chat messages are positional
-        <div key={`${i}-${msg.type}`}>
-          {msg.type === "chatmessage" ? (
-            <div>
-              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">
-                {msg.role}
+      {prompt.prompt.map((msg, i) => {
+        const placeholder = isPlaceholder(msg);
+        return (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: chat messages are positional
+            key={`${i}-${placeholder ? `placeholder-${msg.name}` : msg.role}`}
+          >
+            {placeholder ? (
+              <Badge variant="outline" className="font-mono">
+                {`{{placeholder: ${msg.name}}}`}
+              </Badge>
+            ) : (
+              <div>
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">
+                  {msg.role}
+                </div>
+                <pre className="text-sm font-mono whitespace-pre-wrap leading-6">{msg.content}</pre>
               </div>
-              <pre className="text-sm font-mono whitespace-pre-wrap leading-6">{msg.content}</pre>
-            </div>
-          ) : (
-            <Badge variant="outline" className="font-mono">
-              {`{{placeholder: ${msg.name}}}`}
-            </Badge>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -20,7 +20,8 @@ export function NewPromptForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
 
-  function onSubmit() {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
     setFieldErrors({});
 
@@ -49,7 +50,7 @@ export function NewPromptForm() {
   }
 
   return (
-    <form action={onSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-5 space-y-5">
         <Field
           label="Name"

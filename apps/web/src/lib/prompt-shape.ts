@@ -19,6 +19,7 @@
  */
 
 import type { ChatPromptMessage, CreatePromptInput, Prompt } from "@promptflow/core";
+import { isPlaceholder } from "@promptflow/core";
 
 const USER_CONTEXT_PREFIX = "{{user_context}}\n\n";
 
@@ -117,7 +118,7 @@ export function parsePromptToShape(prompt: Prompt): ParsedShape {
       };
     }
     for (const m of messages) {
-      if (m.type !== "chatmessage") {
+      if (isPlaceholder(m)) {
         return {
           kind: "unsupported",
           reason: "Chat prompts containing placeholder messages aren't editable here yet.",
@@ -126,7 +127,7 @@ export function parsePromptToShape(prompt: Prompt): ParsedShape {
     }
     const allowed = ["system", "user"];
     for (const m of messages) {
-      if (m.type === "chatmessage" && !allowed.includes(m.role)) {
+      if (!isPlaceholder(m) && !allowed.includes(m.role)) {
         return {
           kind: "unsupported",
           reason: `Chat prompts with a ${m.role} message aren't editable here yet.`,
@@ -137,7 +138,7 @@ export function parsePromptToShape(prompt: Prompt): ParsedShape {
     let system = "";
     let userBody = "";
     for (const m of messages) {
-      if (m.type !== "chatmessage") continue;
+      if (isPlaceholder(m)) continue;
       if (m.role === "system") system = m.content;
       else if (m.role === "user") userBody = m.content;
     }

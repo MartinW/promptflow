@@ -1,4 +1,4 @@
-import { extractVariables, PromptFlowError } from "@promptflow/core";
+import { extractVariables, isPlaceholder, PromptFlowError } from "@promptflow/core";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import {
   type ModelGroup,
 } from "@/lib/openrouter";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
-import { AIPlay } from "./aiplay";
+import { AIPlay, type PromptShape } from "./aiplay";
 
 export const dynamic = "force-dynamic";
 
@@ -83,22 +83,24 @@ export default async function PlayPage({
   const requestedVersion = v ? Number.parseInt(v, 10) : undefined;
 
   const client = getServerClient();
-  let body = "";
+  let shape: PromptShape;
   let version = 0;
+  let userContextDefault: string | undefined;
   try {
     const prompt = await client.getPrompt(name, { version: requestedVersion });
-    if (prompt.type !== "text") {
-      return (
-        <main className="mx-auto max-w-2xl px-6 py-20 text-center text-sm text-muted-foreground">
-          AIPlay only supports text prompts in v1.{" "}
-          <Link href={`/prompts/${encodedName}`} className="underline">
-            Go back
-          </Link>
-        </main>
-      );
-    }
-    body = prompt.prompt;
     version = prompt.version;
+    const config = (prompt.config ?? {}) as { defaults?: { user_context?: string } };
+    userContextDefault = config.defaults?.user_context;
+    if (prompt.type === "text") {
+      shape = { type: "text", body: prompt.prompt };
+    } else {
+      const messages: { role: string; content: string }[] = [];
+      for (const m of prompt.prompt) {
+        if (isPlaceholder(m)) continue;
+        messages.push({ role: m.role, content: m.content });
+      }
+      shape = { type: "chat", messages };
+    }
   } catch (err) {
     if (err instanceof PromptFlowError && err.kind === "not_found") {
       notFound();
@@ -106,7 +108,13 @@ export default async function PlayPage({
     throw err;
   }
 
-  const variables = extractVariables(body);
+  const variables =
+    shape.type === "text" ? extractVariables(shape.body) : aggregateChatVariables(shape.messages);
+  const initialValues: Record<string, string> = {};
+  for (const v of variables) initialValues[v] = "";
+  if (userContextDefault && variables.includes("user_context")) {
+    initialValues.user_context = userContextDefault;
+  }
   const models = await listOpenRouterModels();
   const modelGroups = models.length > 0 ? groupModelsByProvider(models) : FALLBACK_GROUPS;
 
@@ -142,10 +150,27 @@ export default async function PlayPage({
       <AIPlay
         promptName={name}
         version={version}
-        body={body}
+        shape={shape}
         variables={variables}
+        initialValues={initialValues}
         modelGroups={modelGroups}
       />
     </main>
   );
+}
+
+function aggregateChatVariables(messages: { role: string; content: string }[]): string[] {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  const pattern = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+  for (const m of messages) {
+    for (const match of m.content.matchAll(pattern)) {
+      const name = match[1];
+      if (!seen.has(name)) {
+        seen.add(name);
+        ordered.push(name);
+      }
+    }
+  }
+  return ordered;
 }

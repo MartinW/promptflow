@@ -29,7 +29,6 @@ export {
   renderPrompt,
   validatePromptTemplate,
 } from "./template";
-
 export type {
   BasePrompt,
   ChatMessage,
@@ -44,3 +43,4 @@ export type {
   PromptMeta,
   TextPrompt,
 } from "./types";
+export { isChatMessage, isPlaceholder } from "./types";

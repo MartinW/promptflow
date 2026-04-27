@@ -25,7 +25,8 @@ export function EditPromptForm({ name, initialShape, initialTags, baseVersion }:
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
 
-  function onSubmit() {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
     setFieldErrors({});
 
@@ -63,7 +64,7 @@ export function EditPromptForm({ name, initialShape, initialTags, baseVersion }:
     tags !== initialTags;
 
   return (
-    <form action={onSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-5 space-y-5">
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">

@@ -9,11 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ModelGroup } from "@/lib/openrouter";
 
+export type PromptShape =
+  | { type: "text"; body: string }
+  | { type: "chat"; messages: { role: string; content: string }[] };
+
 interface Props {
   promptName: string;
   version: number;
-  body: string;
+  shape: PromptShape;
   variables: string[];
+  initialValues: Record<string, string>;
   modelGroups: ModelGroup[];
 }
 
@@ -30,10 +35,15 @@ interface DoneEvent {
 
 type RunEvent = { type: "token"; content: string } | DoneEvent | { type: "error"; message: string };
 
-export function AIPlay({ promptName, version, body, variables, modelGroups }: Props) {
-  const [varValues, setVarValues] = useState<Record<string, string>>(
-    Object.fromEntries(variables.map((v) => [v, ""])),
-  );
+export function AIPlay({
+  promptName,
+  version,
+  shape,
+  variables,
+  initialValues,
+  modelGroups,
+}: Props) {
+  const [varValues, setVarValues] = useState<Record<string, string>>(initialValues);
   const firstModelId =
     modelGroups.find((g) => g.models.length > 0)?.models[0]?.id ?? "openai/gpt-4o-mini";
   const [model, setModel] = useState<string>(firstModelId);
@@ -44,15 +54,18 @@ export function AIPlay({ promptName, version, body, variables, modelGroups }: Pr
   const abortRef = useRef<AbortController | null>(null);
 
   // Re-init variable map when prompt changes (rare; kept for safety).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only re-run when variables list changes
   useEffect(() => {
     setVarValues((prev) => {
-      const next: Record<string, string> = {};
-      for (const v of variables) next[v] = prev[v] ?? "";
+      const next: Record<string, string> = { ...initialValues };
+      for (const v of variables) {
+        if (prev[v] !== undefined) next[v] = prev[v];
+      }
       return next;
     });
   }, [variables]);
 
-  const renderedPreview = useMemo(() => renderPrompt(body, varValues), [body, varValues]);
+  const renderedPreview = useMemo(() => renderPreview(shape, varValues), [shape, varValues]);
 
   async function run() {
     if (running) return;
@@ -135,13 +148,33 @@ export function AIPlay({ promptName, version, body, variables, modelGroups }: Pr
       <section className="space-y-2">
         <header className="flex items-center justify-between">
           <h2 className="text-xs uppercase tracking-wide text-muted-foreground">Prompt body</h2>
-          <Badge variant="outline">v{version}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{shape.type}</Badge>
+            <Badge variant="outline">v{version}</Badge>
+          </div>
         </header>
-        <Card className="p-4">
-          <pre className="text-sm font-mono whitespace-pre-wrap leading-6 max-h-[480px] overflow-y-auto">
-            {body}
-          </pre>
-        </Card>
+        {shape.type === "text" ? (
+          <Card className="p-4">
+            <pre className="text-sm font-mono whitespace-pre-wrap leading-6 max-h-[480px] overflow-y-auto">
+              {shape.body}
+            </pre>
+          </Card>
+        ) : (
+          <div className="space-y-2 max-h-[480px] overflow-y-auto">
+            {shape.messages.map((m, i) => (
+              <Card
+                // biome-ignore lint/suspicious/noArrayIndexKey: messages are positional
+                key={`${i}-${m.role}`}
+                className="p-3 space-y-1"
+              >
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {m.role}
+                </div>
+                <pre className="text-sm font-mono whitespace-pre-wrap leading-6">{m.content}</pre>
+              </Card>
+            ))}
+          </div>
+        )}
         {variables.length > 0 ? (
           <p className="text-xs text-muted-foreground">
             {variables.length} {variables.length === 1 ? "variable" : "variables"} detected
@@ -214,6 +247,13 @@ export function AIPlay({ promptName, version, body, variables, modelGroups }: Pr
       </section>
     </div>
   );
+}
+
+function renderPreview(shape: PromptShape, vars: Record<string, string>): string {
+  if (shape.type === "text") return renderPrompt(shape.body, vars);
+  return shape.messages
+    .map((m) => `[${m.role.toUpperCase()}]\n${renderPrompt(m.content, vars)}`)
+    .join("\n\n");
 }
 
 function VariableInput({

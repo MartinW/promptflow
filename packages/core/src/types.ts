@@ -44,7 +44,27 @@ export interface ChatPlaceholder {
   name: string;
 }
 
-export type ChatPromptMessage = ({ type: "chatmessage" } & ChatMessage) | ChatPlaceholder;
+/**
+ * A chat-prompt message.
+ *
+ * Langfuse accepts the discriminator `type: "chatmessage"` on input but does
+ * not return it on output — chat messages come back as bare `{ role, content }`.
+ * The `type` field is therefore optional; placeholders (which carry `name`
+ * instead of `role`/`content`) keep their required discriminator.
+ *
+ * Use `isChatMessage(msg)` / `isPlaceholder(msg)` to discriminate at runtime.
+ */
+export type ChatPromptMessage = ({ type?: "chatmessage" } & ChatMessage) | ChatPlaceholder;
+
+export function isPlaceholder(msg: ChatPromptMessage): msg is ChatPlaceholder {
+  return "type" in msg && msg.type === "placeholder";
+}
+
+export function isChatMessage(
+  msg: ChatPromptMessage,
+): msg is { type?: "chatmessage" } & ChatMessage {
+  return !isPlaceholder(msg);
+}
 
 export interface ChatPrompt extends BasePrompt {
   type: "chat";

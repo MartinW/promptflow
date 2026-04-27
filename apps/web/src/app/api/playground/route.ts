@@ -1,4 +1,4 @@
-import { renderPrompt } from "@promptflow/core";
+import { isPlaceholder, renderPrompt } from "@promptflow/core";
 import { getServerClient } from "@/lib/server-client";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +8,11 @@ interface RunBody {
   version?: number;
   variables?: Record<string, string>;
   model: string;
+}
+
+interface OpenRouterMessage {
+  role: string;
+  content: string;
 }
 
 interface OpenRouterChunk {
@@ -51,14 +56,30 @@ export async function POST(req: Request): Promise<Response> {
     return jsonError(500, "OPENROUTER_API_KEY is not configured");
   }
 
-  let renderedSystem: string;
+  let messages: OpenRouterMessage[];
   try {
     const client = getServerClient();
     const prompt = await client.getPrompt(body.promptName, { version: body.version });
-    if (prompt.type !== "text") {
-      return jsonError(400, "Chat prompts aren't supported in AIPlay v1");
+    const variables = body.variables ?? {};
+    if (prompt.type === "text") {
+      messages = [{ role: "user", content: renderPrompt(prompt.prompt, variables) }];
+    } else {
+      messages = [];
+      for (const m of prompt.prompt) {
+        if (isPlaceholder(m)) {
+          // Placeholders aren't expanded in v1 — treat as empty user message so the
+          // upstream call doesn't fail outright.
+          continue;
+        }
+        messages.push({
+          role: m.role,
+          content: renderPrompt(m.content, variables),
+        });
+      }
+      if (messages.length === 0) {
+        return jsonError(400, "Chat prompt has no renderable messages");
+      }
     }
-    renderedSystem = renderPrompt(prompt.prompt, body.variables ?? {});
   } catch (err) {
     return jsonError(500, err instanceof Error ? err.message : String(err));
   }
@@ -76,7 +97,7 @@ export async function POST(req: Request): Promise<Response> {
     body: JSON.stringify({
       model: body.model,
       stream: true,
-      messages: [{ role: "user", content: renderedSystem }],
+      messages,
       usage: { include: true },
     }),
   });
