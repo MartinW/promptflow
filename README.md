@@ -12,7 +12,7 @@ Langfuse is the storage layer; PromptFlow is the editor for it. The same prompts
 
 One Langfuse-backed prompt registry, multiple consumers:
 
-- **Web** — `apps/web`, deployed at [promptflow-five.vercel.app](https://promptflow-five.vercel.app). Authoring UI.
+- **Web** — `apps/web`. Authoring UI.
 - **CLI** — [`@promptflow/cli`](apps/cli) — `bun run --filter cli dev prompts list` today, `npx @promptflow/cli prompts list` once published. Manage prompts from the terminal.
 - **MCP server** — [`@promptflow/mcp-server`](apps/mcp-server) — register with Claude Desktop / Claude Code / Cursor; your prompts become invocable MCP Prompts.
 - **Cadence** (iOS) — [github.com/MartinW/cadence](https://github.com/MartinW/cadence). Reads `voice:*` tagged prompts aloud via streamed audio (`openai/gpt-4o-audio-preview` through OpenRouter). Demonstrates the "remote prompt management" thesis — edit in the web UI, behaviour changes in the app on next launch.
