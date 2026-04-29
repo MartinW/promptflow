@@ -7,6 +7,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
+import { DeleteDialog } from "./delete-dialog";
+import { RenameDialog } from "./rename-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,8 @@ export default async function PromptDetailPage({
 
   const allVersions = await loadAllVersions(name).catch(() => null);
   const versions = allVersions?.versions ?? [prompt.version];
+  const aggregateLabels = allVersions?.labels ?? prompt.labels;
+  const hasProductionLabel = aggregateLabels.includes("production");
   const variables = prompt.type === "text" ? extractVariables(prompt.prompt) : [];
   const latestVersion = Math.max(...versions);
   const showDiffAgainstLatest = prompt.type === "text" && prompt.version < latestVersion;
@@ -84,6 +88,11 @@ export default async function PromptDetailPage({
             >
               Edit
             </Link>
+            <RenameDialog
+              currentName={name}
+              sourceType={prompt.type}
+              hasProductionLabel={hasProductionLabel}
+            />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-3">
@@ -183,6 +192,24 @@ export default async function PromptDetailPage({
           </Card>
         </aside>
       </div>
+
+      <section className="mt-12 pt-6 border-t border-border">
+        <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Danger zone</h2>
+        <Card className="p-4 flex items-center justify-between gap-4 border-red-500/20">
+          <div>
+            <p className="text-sm font-medium">Delete this prompt</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Removes all {versions.length} version{versions.length === 1 ? "" : "s"} from Langfuse.
+              Can't be undone.
+            </p>
+          </div>
+          <DeleteDialog
+            name={name}
+            versionCount={versions.length}
+            hasProductionLabel={hasProductionLabel}
+          />
+        </Card>
+      </section>
     </main>
   );
 }
@@ -238,14 +265,18 @@ function ErrorView({ name, error }: { name: string; error: unknown }) {
 
 /**
  * Langfuse's `getPrompt` only returns one version at a time. We use the
- * `listPrompts` filter by name to get the array of versions.
+ * `listPrompts` filter by name to get the array of versions plus the
+ * aggregate label set across all of them (used to detect a production
+ * label so the rename flow can warn appropriately).
  */
-async function loadAllVersions(name: string): Promise<{ versions: number[] } | null> {
+async function loadAllVersions(
+  name: string,
+): Promise<{ versions: number[]; labels: string[] } | null> {
   try {
     const client = getServerClient();
     const list = await client.listPrompts({ name, limit: 1 });
     const match = list.find((p) => p.name === name);
-    return match ? { versions: match.versions } : null;
+    return match ? { versions: match.versions, labels: match.labels } : null;
   } catch {
     return null;
   }

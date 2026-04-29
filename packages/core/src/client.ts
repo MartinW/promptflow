@@ -56,14 +56,28 @@ export interface PromptFlowClient {
 
   /** Create a new prompt or version of an existing prompt. */
   createPrompt(input: CreatePromptInput): Promise<Prompt>;
+
+  /**
+   * Delete a prompt or a subset of its versions.
+   *
+   * - No options → deletes every version under that name.
+   * - `{ version: N }` → deletes just that version.
+   * - `{ label: "foo" }` → deletes every version carrying that label.
+   *
+   * Calls Langfuse's `DELETE /api/public/v2/prompts/{name}` directly because
+   * the langfuse-js SDK doesn't surface this endpoint yet.
+   */
+  deletePrompt(name: string, opts?: { version?: number; label?: string }): Promise<void>;
 }
 
 export function createClient(config: ClientConfig): PromptFlowClient {
+  const baseUrl = config.host ?? "https://cloud.langfuse.com";
   const sdk = new Langfuse({
     publicKey: config.publicKey,
     secretKey: config.secretKey,
-    baseUrl: config.host ?? "https://cloud.langfuse.com",
+    baseUrl,
   });
+  const basicAuth = `Basic ${btoa(`${config.publicKey}:${config.secretKey}`)}`;
 
   return {
     async listPrompts(filter?: ListPromptsFilter): Promise<PromptMeta[]> {
@@ -88,13 +102,23 @@ export function createClient(config: ClientConfig): PromptFlowClient {
       // — important for the editor UI; the live runtime path should pass
       // `{ label: "production" }` explicitly.
       const label = opts.version === undefined && opts.label === undefined ? "latest" : opts.label;
+      // Bypass `sdk.api.promptsGet` because the SDK doesn't URL-encode the
+      // prompt name — folder-style names like `meditation/evening` get split
+      // across path segments and routed to Langfuse's web layer instead of the
+      // API, returning HTML 404s. Direct fetch with `encodeURIComponent` works.
+      const url = new URL(`/api/public/v2/prompts/${encodeURIComponent(name)}`, baseUrl);
+      if (opts.version !== undefined) url.searchParams.set("version", String(opts.version));
+      if (label !== undefined) url.searchParams.set("label", label);
+
+      let response: Response;
       try {
-        const result = await sdk.api.promptsGet({
-          promptName: name,
-          version: opts.version,
-          label,
-        });
-        return result as unknown as Prompt;
+        response = await fetch(url, { headers: { Authorization: basicAuth } });
+      } catch (err) {
+        throw wrapError(err);
+      }
+      if (!response.ok) throw wrapError(response);
+      try {
+        return (await response.json()) as Prompt;
       } catch (err) {
         throw wrapError(err);
       }
@@ -127,6 +151,25 @@ export function createClient(config: ClientConfig): PromptFlowClient {
       } catch (err) {
         throw wrapError(err);
       }
+    },
+
+    async deletePrompt(name, opts = {}): Promise<void> {
+      // Folder-style names (e.g. `onboarding/welcome-email`) must be URL-encoded
+      // so the slashes don't break the path.
+      const url = new URL(`/api/public/v2/prompts/${encodeURIComponent(name)}`, baseUrl);
+      if (opts.version !== undefined) url.searchParams.set("version", String(opts.version));
+      if (opts.label !== undefined) url.searchParams.set("label", opts.label);
+
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: "DELETE",
+          headers: { Authorization: basicAuth },
+        });
+      } catch (err) {
+        throw wrapError(err);
+      }
+      if (!response.ok) throw wrapError(response);
     },
   };
 }
