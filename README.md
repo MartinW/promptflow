@@ -38,10 +38,10 @@ One Langfuse-backed prompt registry, multiple consumers:
    └─────────────────┬────────────────┘  │
                      │ HTTPS              │ HTTPS
                      ▼                    ▼
-          ┌──────────────────┐  ┌──────────────────┐
-          │  Langfuse API    │  │  OpenRouter      │
-          │  (BYO keys)      │  │  (Claude / GPT)  │
-          └──────────────────┘  └──────────────────┘
+          ┌──────────────────┐  ┌──────────────────────────────┐
+          │  Langfuse API    │  │  OpenRouter / Vercel AI GW   │
+          │  (BYO keys)      │  │  (env-selected; Claude/GPT)  │
+          └──────────────────┘  └──────────────────────────────┘
 ```
 
 ## Quickstart
@@ -68,6 +68,7 @@ Both Langfuse and OpenRouter are bring-your-own-keys. Set in `apps/web/.env.loca
 | `LANGFUSE_SECRET_KEY` | yes | Langfuse project secret key (write access) |
 | `LANGFUSE_HOST` | no | Defaults to `https://cloud.langfuse.com` |
 | `OPENROUTER_API_KEY` | optional | Required for AIPlay streaming |
+| `AI_GATEWAY_API_KEY` | optional | Experimental: when set, AIPlay streams via Vercel AI SDK + AI Gateway instead of OpenRouter (takes priority if both are set). Sends AI SDK telemetry to Langfuse via the `@langfuse/otel` span processor. |
 
 If any keys are missing, the app renders graceful "not configured" states instead of crashing.
 
@@ -76,7 +77,8 @@ If any keys are missing, the app renders graceful "not configured" states instea
 **Web** (`apps/web`)
 - Prompt list with tag filtering, search, version sidebar, inline diff, Cmd-K palette
 - Compose editor with optional System Prompt + User Context fields; saves text-vs-chat type automatically
-- AIPlay playground — OpenRouter SSE streaming, live token/cost/latency, provider-grouped model picker
+- AIPlay playground — streams via OpenRouter or Vercel AI SDK + AI Gateway (env-selected), live token/cost/latency, provider-grouped model picker, per-request provider badge
+- Vercel AI SDK path emits real-time traces to Langfuse via `@langfuse/otel` (same native ingest path OpenRouter uses)
 - Drafts by default — explicit "Promote to production" checkbox
 
 **CLI** (`@promptflow/cli`)
@@ -102,7 +104,8 @@ If any keys are missing, the app renders graceful "not configured" states instea
 - [ ] A/B comparison with paired t-test + bootstrap CIs
 - [x] CLI (`@promptflow/cli` on npm)
 - [x] MCP server exposing Langfuse prompts as MCP Prompts (Claude Desktop / Code / Cursor compatible)
-- [ ] OpenTelemetry instrumentation + Grafana dashboard
+- [x] OpenTelemetry instrumentation → Langfuse (Vercel AI SDK path via `@langfuse/otel`)
+- [ ] Grafana dashboard
 
 **Week 3 — Mobile + portfolio**
 

@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { pickProvider } from "@/lib/aiprovider";
 import { checkLangfuse } from "@/lib/langfuse";
 
 export async function AppHeader() {
   const status = await checkLangfuse();
-  const indicator = statusIndicator(status);
+  const langfuse = langfuseIndicator(status);
+  const provider = providerIndicator(pickProvider());
 
   return (
     <header className="border-b border-border">
@@ -25,9 +27,15 @@ export async function AppHeader() {
           <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 font-mono text-[0.7rem]">
             ⌘K
           </kbd>
-          <div className="flex items-center gap-2">
-            <span className={`size-2 rounded-full ${indicator.dot}`} />
-            <span>{indicator.label}</span>
+          <div className="flex flex-col items-start gap-1">
+            <div className="flex items-center gap-2">
+              <span className={`size-2 rounded-full ${langfuse.dot}`} />
+              <span>{langfuse.label}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`size-2 rounded-full ${provider.dot}`} />
+              <span>{provider.label}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -35,7 +43,7 @@ export async function AppHeader() {
   );
 }
 
-function statusIndicator(status: Awaited<ReturnType<typeof checkLangfuse>>) {
+function langfuseIndicator(status: Awaited<ReturnType<typeof checkLangfuse>>) {
   if (status.kind === "ok") {
     return { dot: "bg-emerald-500", label: "Langfuse connected" };
   }
@@ -43,4 +51,14 @@ function statusIndicator(status: Awaited<ReturnType<typeof checkLangfuse>>) {
     return { dot: "bg-amber-500", label: "Langfuse not configured" };
   }
   return { dot: "bg-red-500", label: "Langfuse error" };
+}
+
+function providerIndicator(provider: ReturnType<typeof pickProvider>) {
+  if (provider === "vercel") {
+    return { dot: "bg-emerald-500", label: "Vercel AI Gateway connected" };
+  }
+  if (provider === "openrouter") {
+    return { dot: "bg-emerald-500", label: "OpenRouter connected" };
+  }
+  return { dot: "bg-amber-500", label: "No model provider" };
 }
