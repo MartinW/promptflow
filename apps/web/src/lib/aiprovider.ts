@@ -1,5 +1,6 @@
 import "server-only";
 import { gateway, type ModelMessage, streamText } from "ai";
+import { langfuseSpanProcessor } from "@/instrumentation";
 
 export type Provider = "vercel" | "openrouter";
 
@@ -79,6 +80,13 @@ export function streamViaVercel(opts: VercelStreamOptions): ReadableStream<Uint8
         });
       } finally {
         controller.close();
+        // Push spans to Langfuse the moment the stream ends instead of waiting
+        // on a batch timer. Best-effort — never let flush break the response.
+        try {
+          await langfuseSpanProcessor.forceFlush();
+        } catch {
+          // ignore
+        }
       }
     },
   });
