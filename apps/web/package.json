@@ -10,9 +10,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "^3.0.110",
     "@base-ui/react": "^1.4.1",
+    "@opentelemetry/api": "^1.9.1",
     "@promptflow/core": "workspace:*",
     "@types/diff": "^8.0.0",
+    "@vercel/otel": "^2.1.2",
+    "ai": "^6.0.175",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

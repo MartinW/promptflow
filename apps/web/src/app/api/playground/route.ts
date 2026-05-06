@@ -1,4 +1,5 @@
 import { isPlaceholder, renderPrompt } from "@promptflow/core";
+import { pickProvider, streamViaVercel } from "@/lib/aiprovider";
 import { getServerClient } from "@/lib/server-client";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ interface RunBody {
   model: string;
 }
 
-interface OpenRouterMessage {
+interface ChatMessage {
   role: string;
   content: string;
 }
@@ -51,12 +52,12 @@ export async function POST(req: Request): Promise<Response> {
     return jsonError(400, "Missing model");
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return jsonError(500, "OPENROUTER_API_KEY is not configured");
+  const provider = pickProvider();
+  if (!provider) {
+    return jsonError(500, "Neither AI_GATEWAY_API_KEY nor OPENROUTER_API_KEY is configured");
   }
 
-  let messages: OpenRouterMessage[];
+  let messages: ChatMessage[];
   try {
     const client = getServerClient();
     const prompt = await client.getPrompt(body.promptName, { version: body.version });
@@ -84,6 +85,17 @@ export async function POST(req: Request): Promise<Response> {
     return jsonError(500, err instanceof Error ? err.message : String(err));
   }
 
+  if (provider === "vercel") {
+    const stream = streamViaVercel({
+      messages,
+      model: body.model,
+      promptName: body.promptName,
+      promptVersion: body.version,
+    });
+    return sseResponse(stream, "vercel");
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY!;
   const startedAt = Date.now();
 
   const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -161,11 +173,16 @@ export async function POST(req: Request): Promise<Response> {
     },
   });
 
+  return sseResponse(stream, "openrouter");
+}
+
+function sseResponse(stream: ReadableStream<Uint8Array>, provider: "vercel" | "openrouter"): Response {
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
+      "X-PromptFlow-Provider": provider,
     },
   });
 }

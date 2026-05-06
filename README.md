@@ -68,6 +68,7 @@ Both Langfuse and OpenRouter are bring-your-own-keys. Set in `apps/web/.env.loca
 | `LANGFUSE_SECRET_KEY` | yes | Langfuse project secret key (write access) |
 | `LANGFUSE_HOST` | no | Defaults to `https://cloud.langfuse.com` |
 | `OPENROUTER_API_KEY` | optional | Required for AIPlay streaming |
+| `AI_GATEWAY_API_KEY` | optional | Experimental: when set, AIPlay streams via Vercel AI SDK + AI Gateway instead of OpenRouter (takes priority if both are set). Emits OTel traces to Langfuse. |
 
 If any keys are missing, the app renders graceful "not configured" states instead of crashing.
 

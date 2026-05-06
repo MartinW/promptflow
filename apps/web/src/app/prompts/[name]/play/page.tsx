@@ -2,9 +2,9 @@ import { extractVariables, isPlaceholder, PromptFlowError } from "@promptflow/co
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
+import { pickProvider } from "@/lib/aiprovider";
 import {
   groupModelsByProvider,
-  isOpenRouterConfigured,
   listOpenRouterModels,
   type ModelGroup,
 } from "@/lib/openrouter";
@@ -131,17 +131,18 @@ export default async function PlayPage({
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">AIPlay</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Run this prompt against any OpenRouter model. Iterate variables and inputs live.
+          Run this prompt against any model. Iterate variables and inputs live.
         </p>
       </header>
 
-      {!isOpenRouterConfigured() ? (
+      {pickProvider() === null ? (
         <Card className="px-5 py-4 mb-4 border-amber-500/30 bg-amber-500/5 text-sm">
           <p className="font-medium text-amber-700 dark:text-amber-400">
-            OpenRouter not configured
+            No model provider configured
           </p>
           <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-1">
-            Set <code className="font-mono">OPENROUTER_API_KEY</code> in{" "}
+            Set <code className="font-mono">AI_GATEWAY_API_KEY</code> (Vercel AI Gateway) or{" "}
+            <code className="font-mono">OPENROUTER_API_KEY</code> in{" "}
             <code className="font-mono">.env.local</code> to run prompts.
           </p>
         </Card>

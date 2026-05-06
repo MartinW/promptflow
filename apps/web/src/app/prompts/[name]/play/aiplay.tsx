@@ -51,6 +51,7 @@ export function AIPlay({
   const [running, setRunning] = useState(false);
   const [summary, setSummary] = useState<DoneEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [provider, setProvider] = useState<"vercel" | "openrouter" | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // Re-init variable map when prompt changes (rare; kept for safety).
@@ -72,6 +73,7 @@ export function AIPlay({
     setOutput("");
     setSummary(null);
     setError(null);
+    setProvider(null);
     setRunning(true);
     const ac = new AbortController();
     abortRef.current = ac;
@@ -98,6 +100,11 @@ export function AIPlay({
           setError(text);
         }
         return;
+      }
+
+      const headerProvider = res.headers.get("X-PromptFlow-Provider");
+      if (headerProvider === "vercel" || headerProvider === "openrouter") {
+        setProvider(headerProvider);
       }
 
       const reader = res.body.getReader();
@@ -225,11 +232,14 @@ export function AIPlay({
       <section className="space-y-2">
         <header className="flex items-center justify-between">
           <h2 className="text-xs uppercase tracking-wide text-muted-foreground">Output</h2>
-          {running ? (
-            <span className="text-xs text-muted-foreground animate-pulse">streaming…</span>
-          ) : summary ? (
-            <SummaryBadge summary={summary} />
-          ) : null}
+          <div className="flex items-center gap-2">
+            {provider ? <ProviderBadge provider={provider} /> : null}
+            {running ? (
+              <span className="text-xs text-muted-foreground animate-pulse">streaming…</span>
+            ) : summary ? (
+              <SummaryBadge summary={summary} />
+            ) : null}
+          </div>
         </header>
         <Card className={`p-4 min-h-[400px] ${error ? "border-red-500/30 bg-red-500/5" : ""}`}>
           {error ? (
@@ -325,6 +335,15 @@ function ModelPicker({
         ))}
       </select>
     </div>
+  );
+}
+
+function ProviderBadge({ provider }: { provider: "vercel" | "openrouter" }) {
+  const label = provider === "vercel" ? "via Vercel AI Gateway" : "via OpenRouter";
+  return (
+    <Badge variant="outline" className="text-[10px] font-normal">
+      {label}
+    </Badge>
   );
 }
 
