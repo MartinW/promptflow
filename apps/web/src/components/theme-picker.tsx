@@ -4,8 +4,64 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { type FontFamily, useFontFamily } from "@/components/font-family";
+import { type StyleVariant, useStyleVariant } from "@/components/style-variant";
 import { type ThemeFamily, useThemeFamily } from "@/components/theme-family";
 import { cn } from "@/lib/utils";
+
+type StyleOption = {
+  value: StyleVariant;
+  label: string;
+  description: string;
+  /** Inline preview tokens — visible without applying the style globally */
+  preview: { radius: string; border: string; shadow: string; font: string; bg?: string; fg?: string };
+};
+
+const STYLES: StyleOption[] = [
+  {
+    value: "clean",
+    label: "Clean",
+    description: "Soft edges, balanced rhythm.",
+    preview: {
+      radius: "0.5rem",
+      border: "1px solid oklch(0.85 0 0)",
+      shadow: "0 1px 2px 0 oklch(0 0 0 / 6%), 0 0 0 1px oklch(0 0 0 / 4%)",
+      font: "var(--font-geist-sans)",
+    },
+  },
+  {
+    value: "brutalist",
+    label: "Brutalist",
+    description: "Sharp, heavy, no-nonsense.",
+    preview: {
+      radius: "0",
+      border: "2px solid oklch(0.205 0 0)",
+      shadow: "4px 4px 0 oklch(0.205 0 0)",
+      font: "var(--font-space-grotesk)",
+    },
+  },
+  {
+    value: "editorial",
+    label: "Editorial",
+    description: "Generous, considered, serif.",
+    preview: {
+      radius: "0.375rem",
+      border: "1px solid oklch(0.9 0 0)",
+      shadow: "0 8px 24px -8px oklch(0 0 0 / 12%)",
+      font: "var(--font-lora)",
+    },
+  },
+  {
+    value: "terminal",
+    label: "Terminal",
+    description: "Mono, flat, console-feel.",
+    preview: {
+      radius: "0",
+      border: "1px solid oklch(0.7 0 0)",
+      shadow: "none",
+      font: "var(--font-jetbrains)",
+    },
+  },
+];
 
 type FamilyOption = {
   value: ThemeFamily;
@@ -55,16 +111,26 @@ type FontOption = {
 };
 
 const FONTS: FontOption[] = [
+  { value: "auto", label: "Auto", description: "Follows the Style.", className: "pf-typeface-auto" },
   { value: "default", label: "Geist", description: "Clean geometric sans.", className: "pf-typeface-default" },
-  { value: "inter", label: "Inter", description: "Friendly humanist sans.", className: "pf-typeface-inter" },
+  {
+    value: "space-grotesk",
+    label: "Space Grotesk",
+    description: "Geometric with character.",
+    className: "pf-typeface-space-grotesk",
+  },
   { value: "lora", label: "Lora", description: "Warm editorial serif.", className: "pf-typeface-lora" },
   { value: "jetbrains", label: "JetBrains Mono", description: "Crisp monospaced.", className: "pf-typeface-jetbrains" },
 ];
+
+const sectionTileBase =
+  "flex flex-col items-start gap-3 rounded-lg border bg-card p-4 text-left transition-colors hover:border-foreground/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 
 export function ThemePicker() {
   const { theme, setTheme } = useTheme();
   const { family, setFamily } = useThemeFamily();
   const { font, setFont } = useFontFamily();
+  const { style, setStyle } = useStyleVariant();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -74,9 +140,56 @@ export function ThemePicker() {
   const currentMode = mounted ? theme : undefined;
   const currentFamily = mounted ? family : undefined;
   const currentFont = mounted ? font : undefined;
+  const currentStyle = mounted ? style : undefined;
 
   return (
     <div className="space-y-8">
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-sm font-medium">Style</h3>
+          <p className="text-xs text-muted-foreground">
+            Sets the look & feel — radii, borders, shadows, motion, and a default font.
+          </p>
+        </div>
+        <div role="radiogroup" aria-label="Style variant" className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {STYLES.map(({ value, label, description, preview }) => {
+            const selected = currentStyle === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setStyle(value)}
+                className={cn(
+                  sectionTileBase,
+                  selected ? "border-foreground/60 ring-1 ring-foreground/40" : "border-border",
+                )}
+              >
+                <div
+                  aria-hidden
+                  className="flex h-12 w-full items-center justify-center bg-muted/40"
+                  style={{
+                    borderRadius: preview.radius,
+                    border: preview.border,
+                    boxShadow: preview.shadow,
+                    fontFamily: preview.font,
+                  }}
+                >
+                  <span className="text-base font-medium" style={{ fontFamily: preview.font }}>
+                    Aa
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">{label}</div>
+                  <div className="text-xs text-muted-foreground">{description}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="space-y-3">
         <div>
           <h3 className="text-sm font-medium">Theme family</h3>
@@ -93,8 +206,7 @@ export function ThemePicker() {
                 aria-checked={selected}
                 onClick={() => setFamily(value)}
                 className={cn(
-                  "flex flex-col items-start gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
-                  "hover:border-foreground/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+                  sectionTileBase,
                   selected ? "border-foreground/60 ring-1 ring-foreground/40" : "border-border",
                 )}
               >
@@ -107,41 +219,6 @@ export function ThemePicker() {
                     <span className="size-3 rounded-full" style={{ background: swatch.primary }} />
                     <span className="size-3 rounded-full" style={{ background: swatch.accent }} />
                   </div>
-                </div>
-                <div className="space-y-0.5">
-                  <div className="text-sm font-medium">{label}</div>
-                  <div className="text-xs text-muted-foreground">{description}</div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <h3 className="text-sm font-medium">Font</h3>
-          <p className="text-xs text-muted-foreground">Pick a typeface for the interface.</p>
-        </div>
-        <div role="radiogroup" aria-label="Font family" className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {FONTS.map(({ value, label, description, className }) => {
-            const selected = currentFont === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => setFont(value)}
-                className={cn(
-                  "flex flex-col items-start gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
-                  "hover:border-foreground/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-                  selected ? "border-foreground/60 ring-1 ring-foreground/40" : "border-border",
-                  className,
-                )}
-              >
-                <div className="flex h-10 w-full items-center justify-center rounded-md bg-muted/40 ring-1 ring-foreground/10">
-                  <span className="text-2xl leading-none">Aa</span>
                 </div>
                 <div className="space-y-0.5">
                   <div className="text-sm font-medium">{label}</div>
@@ -179,6 +256,46 @@ export function ThemePicker() {
                   <span className="font-medium text-sm">{label}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">{description}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-sm font-medium">Font</h3>
+          <p className="text-xs text-muted-foreground">
+            Override the typeface, or leave on Auto to follow the Style.
+          </p>
+        </div>
+        <div
+          role="radiogroup"
+          aria-label="Font family"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+        >
+          {FONTS.map(({ value, label, description, className }) => {
+            const selected = currentFont === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setFont(value)}
+                className={cn(
+                  sectionTileBase,
+                  selected ? "border-foreground/60 ring-1 ring-foreground/40" : "border-border",
+                  className,
+                )}
+              >
+                <div className="flex h-10 w-full items-center justify-center rounded-md bg-muted/40 ring-1 ring-foreground/10">
+                  <span className="text-2xl leading-none">Aa</span>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">{label}</div>
+                  <div className="text-xs text-muted-foreground">{description}</div>
+                </div>
               </button>
             );
           })}

@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-style-default), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-heading: var(--font-style-display), var(--font-style-default), ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,6 +46,12 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --shadow-xs: var(--elevation-1);
+  --shadow-sm: var(--elevation-1);
+  --shadow-md: var(--elevation-2);
+  --shadow-lg: var(--elevation-2);
+  --shadow-xl: var(--elevation-3);
+  --shadow-2xl: var(--elevation-3);
 }
 
 :root {
@@ -73,6 +79,39 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
+
+  /* === Semantic design tokens (Clean baseline) === */
+  /* Shape */
+  --border-width: 1px;
+  /* Elevation */
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px 0 oklch(0 0 0 / 5%), 0 0 0 1px oklch(0 0 0 / 4%);
+  --elevation-2: 0 4px 12px -2px oklch(0 0 0 / 8%), 0 0 0 1px oklch(0 0 0 / 4%);
+  --elevation-3: 0 16px 32px -8px oklch(0 0 0 / 12%), 0 0 0 1px oklch(0 0 0 / 4%);
+  /* Motion */
+  --duration-fast: 80ms;
+  --duration-base: 160ms;
+  --duration-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+  /* Typography */
+  --font-style-default: var(--font-geist-sans);
+  --font-style-display: var(--font-geist-sans);
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+  --weight-base: 400;
+  --weight-strong: 500;
+  /* Density (used for primitive padding) */
+  --density-tight: 0.85;
+  --density-cozy: 1;
+  --density-comfy: 1.15;
+  --density-loose: 1.35;
+  --density: var(--density-cozy);
+
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -84,6 +123,11 @@
 }
 
 .dark {
+  /* Dark-mode elevation: deeper shadows, lighter ring overlay */
+  --elevation-1: 0 1px 2px 0 oklch(0 0 0 / 35%), 0 0 0 1px oklch(1 0 0 / 8%);
+  --elevation-2: 0 4px 12px -2px oklch(0 0 0 / 45%), 0 0 0 1px oklch(1 0 0 / 8%);
+  --elevation-3: 0 16px 32px -8px oklch(0 0 0 / 55%), 0 0 0 1px oklch(1 0 0 / 8%);
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -253,14 +297,211 @@
   }
 }
 
+/* ===== Style variants (high-level look & feel) ===== */
+/* Clean is the baseline defined in :root / .dark — no class needed but exists for symmetry. */
+
+.style-brutalist {
+  --radius: 0;
+  --border-width: 2px;
+  --elevation-1: 4px 4px 0 oklch(0.205 0 0);
+  --elevation-2: 6px 6px 0 oklch(0.205 0 0);
+  --elevation-3: 8px 8px 0 oklch(0.205 0 0);
+  --duration-fast: 0ms;
+  --duration-base: 0ms;
+  --duration-slow: 0ms;
+  --ease-standard: steps(1, end);
+  --ease-emphasized: steps(1, end);
+  --tracking-tight: -0.02em;
+  --tracking-normal: -0.01em;
+  --leading-tight: 1.05;
+  --leading-normal: 1.4;
+  --weight-base: 500;
+  --weight-strong: 700;
+  --density: var(--density-tight);
+  --font-style-default: var(--font-space-grotesk);
+  --font-style-display: var(--font-space-grotesk);
+}
+
+.dark.style-brutalist {
+  --elevation-1: 4px 4px 0 oklch(0.985 0 0);
+  --elevation-2: 6px 6px 0 oklch(0.985 0 0);
+  --elevation-3: 8px 8px 0 oklch(0.985 0 0);
+}
+
+.style-editorial {
+  --radius: 0.375rem;
+  --border-width: 1px;
+  --elevation-1: 0 1px 0 oklch(0 0 0 / 6%);
+  --elevation-2: 0 8px 24px -8px oklch(0 0 0 / 10%);
+  --elevation-3: 0 24px 48px -12px oklch(0 0 0 / 14%);
+  --duration-fast: 120ms;
+  --duration-base: 240ms;
+  --duration-slow: 360ms;
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --leading-tight: 1.25;
+  --leading-normal: 1.65;
+  --leading-relaxed: 1.85;
+  --weight-base: 400;
+  --weight-strong: 600;
+  --density: var(--density-loose);
+  --font-style-default: var(--font-lora);
+  --font-style-display: var(--font-lora);
+}
+
+.dark.style-editorial {
+  --elevation-1: 0 1px 0 oklch(1 0 0 / 8%);
+  --elevation-2: 0 8px 24px -8px oklch(0 0 0 / 50%);
+  --elevation-3: 0 24px 48px -12px oklch(0 0 0 / 60%);
+}
+
+.style-terminal {
+  --radius: 0;
+  --border-width: 1px;
+  --elevation-1: none;
+  --elevation-2: none;
+  --elevation-3: none;
+  --duration-fast: 60ms;
+  --duration-base: 100ms;
+  --duration-slow: 140ms;
+  --tracking-tight: 0;
+  --tracking-normal: 0;
+  --tracking-wide: 0.08em;
+  --leading-tight: 1.2;
+  --leading-normal: 1.4;
+  --weight-base: 400;
+  --weight-strong: 600;
+  --density: var(--density-cozy);
+  --font-style-default: var(--font-jetbrains);
+  --font-style-display: var(--font-jetbrains);
+}
+
+/* === Per-Style primitive overrides (where Tailwind utilities don't auto-cascade) === */
+
+/* Brutalist: solid borders + hard shadows on key surfaces; replace ring-1 with full border */
+.style-brutalist [data-slot="card"],
+.style-brutalist [data-slot="dialog-content"],
+.style-brutalist [data-slot="popup"],
+.style-brutalist [data-slot="popover-content"] {
+  border: var(--border-width) solid var(--border);
+  box-shadow: var(--elevation-1);
+}
+
+.style-brutalist [data-slot="button"],
+.style-brutalist [data-slot="badge"] {
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-standard);
+}
+
+.style-brutalist [data-slot="input"],
+.style-brutalist [data-slot="textarea"] {
+  border-width: var(--border-width);
+  transition-duration: var(--duration-base);
+}
+
+/* Terminal: flatten — no shadows, hard borders, snappy transitions */
+.style-terminal [data-slot="card"],
+.style-terminal [data-slot="dialog-content"],
+.style-terminal [data-slot="popup"],
+.style-terminal [data-slot="popover-content"] {
+  border: var(--border-width) solid var(--border);
+  box-shadow: none;
+}
+
+.style-terminal [data-slot="button"],
+.style-terminal [data-slot="badge"],
+.style-terminal [data-slot="input"],
+.style-terminal [data-slot="textarea"] {
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-standard);
+}
+
+/* Editorial: longer eases on interactive primitives */
+.style-editorial [data-slot="button"],
+.style-editorial [data-slot="badge"],
+.style-editorial [data-slot="card"],
+.style-editorial [data-slot="dialog-content"] {
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-standard);
+}
+
+/* Editorial: bump body type, generous reading rhythm */
+.style-editorial body {
+  font-size: 1.0625rem;
+  line-height: var(--leading-normal);
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "liga", "kern";
+}
+
+/* Editorial: display headings larger, tighter, with optical tracking */
+.style-editorial .font-heading,
+.style-editorial [data-slot="dialog-title"],
+.style-editorial [data-slot="card-title"] {
+  font-feature-settings: "liga", "dlig", "swsh";
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  font-weight: 600;
+}
+
+/* Editorial: bump display heading sizes — magazine-style */
+.style-editorial h1.font-heading,
+.style-editorial .font-heading.text-4xl {
+  font-size: 3.25rem;
+  letter-spacing: -0.025em;
+}
+
+.style-editorial h2.font-heading,
+.style-editorial .font-heading.text-3xl {
+  font-size: 2.25rem;
+}
+
+.style-editorial .font-heading.text-2xl {
+  font-size: 1.75rem;
+}
+
+.style-editorial .font-heading.text-xl {
+  font-size: 1.5rem;
+}
+
+/* Editorial: cards keep a soft, subtle outline — no box-and-shadow chrome */
+.style-editorial [data-slot="card"] {
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+  box-shadow: none;
+  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+}
+
+.style-editorial [data-slot="card-footer"] {
+  background: transparent;
+}
+
+/* Editorial: descriptions read like a deck — italic, slightly muted */
+.style-editorial [data-slot="card-description"],
+.style-editorial [data-slot="dialog-description"] {
+  font-style: italic;
+}
+
+/* Editorial: long-form paragraphs get pretty wrapping + hyphenation for column-like rhythm */
+.style-editorial p {
+  text-wrap: pretty;
+  hyphens: auto;
+}
+
 /* ===== Font families ===== */
+
+/* Auto: follows the active Style's default font */
+.pf-typeface-auto {
+  font-family: var(--font-style-default), ui-sans-serif, system-ui, sans-serif;
+}
 
 .pf-typeface-default {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-.pf-typeface-inter {
-  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+.pf-typeface-space-grotesk {
+  font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
 }
 
 .pf-typeface-lora {

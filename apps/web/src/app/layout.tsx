@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, JetBrains_Mono, Lora } from "next/font/google";
+import { Geist, Geist_Mono, JetBrains_Mono, Lora, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import { AppHeader } from "@/components/app-header";
 import { CommandPalette } from "@/components/command-palette";
 import { fontFamilyInitScript } from "@/components/font-family";
+import { styleVariantInitScript } from "@/components/style-variant";
 import { themeFamilyInitScript } from "@/components/theme-family";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -18,8 +19,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
@@ -46,10 +47,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${lora.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${lora.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: styleVariantInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: themeFamilyInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: fontFamilyInitScript }} />
       </head>
