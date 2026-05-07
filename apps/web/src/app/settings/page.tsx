@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StylePreview } from "@/components/style-preview";
 import { ThemePicker } from "@/components/theme-picker";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export default function SettingsPage() {
         <p className="mt-1 text-sm text-muted-foreground">Customize how PromptFlow looks and feels.</p>
       </header>
 
-      <section aria-labelledby="theme-heading" className="space-y-4">
+      <section aria-labelledby="theme-heading" className="space-y-6">
         <div>
           <h2 id="theme-heading" className="text-base font-medium">
             Theme
@@ -21,6 +22,7 @@ export default function SettingsPage() {
           <p className="text-sm text-muted-foreground">Choose how the interface should appear.</p>
         </div>
         <ThemePicker />
+        <StylePreview />
       </section>
     </main>
   );

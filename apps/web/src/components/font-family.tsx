@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-export const FONT_FAMILIES = ["default", "inter", "lora", "jetbrains"] as const;
+export const FONT_FAMILIES = ["auto", "default", "space-grotesk", "lora", "jetbrains"] as const;
 export type FontFamily = (typeof FONT_FAMILIES)[number];
 
 const STORAGE_KEY = "font-family";
@@ -21,17 +21,20 @@ function applyFontClass(font: FontFamily) {
   root.classList.add(`pf-typeface-${font}`);
 }
 
+function normalize(stored: string | null): FontFamily {
+  if (stored === "inter") return "auto";
+  if (stored && (FONT_FAMILIES as readonly string[]).includes(stored)) return stored as FontFamily;
+  return "auto";
+}
+
 export function FontFamilyProvider({ children }: { children: React.ReactNode }) {
-  const [font, setFontState] = useState<FontFamily>("default");
+  const [font, setFontState] = useState<FontFamily>("auto");
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as FontFamily | null;
-    if (stored && FONT_FAMILIES.includes(stored)) {
-      setFontState(stored);
-      applyFontClass(stored);
-    } else {
-      applyFontClass("default");
-    }
+    const next = normalize(localStorage.getItem(STORAGE_KEY));
+    setFontState(next);
+    applyFontClass(next);
+    if (localStorage.getItem(STORAGE_KEY) === "inter") localStorage.setItem(STORAGE_KEY, next);
   }, []);
 
   const setFont = useCallback((next: FontFamily) => {
@@ -52,8 +55,9 @@ export function useFontFamily() {
 export const fontFamilyInitScript = `
 (function(){try{
   var f=localStorage.getItem('${STORAGE_KEY}');
+  if(f==='inter')f='auto';
   var allowed=${JSON.stringify(FONT_FAMILIES)};
-  if(allowed.indexOf(f)===-1)f='default';
+  if(allowed.indexOf(f)===-1)f='auto';
   document.documentElement.classList.add('pf-typeface-'+f);
-}catch(e){document.documentElement.classList.add('pf-typeface-default');}})();
+}catch(e){document.documentElement.classList.add('pf-typeface-auto');}})();
 `;
