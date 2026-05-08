@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { auth, signOut } from "@/auth";
 import { pickProvider } from "@/lib/aiprovider";
 import { checkLangfuse } from "@/lib/langfuse";
 
 export async function AppHeader() {
-  const status = await checkLangfuse();
+  const [status, session] = await Promise.all([checkLangfuse(), auth()]);
   const langfuse = langfuseIndicator(status);
   const provider = providerIndicator(pickProvider());
 
@@ -40,6 +41,25 @@ export async function AppHeader() {
               <span>{provider.label}</span>
             </div>
           </div>
+          {session?.user && (
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/sign-in" });
+              }}
+              className="flex items-center gap-2"
+            >
+              <span className="hidden md:inline text-muted-foreground">
+                {session.user.email}
+              </span>
+              <button
+                type="submit"
+                className="rounded border border-border px-2 py-1 hover:bg-muted/40 transition-colors"
+              >
+                Sign out
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </header>
