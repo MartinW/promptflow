@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, JetBrains_Mono, Lora, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
@@ -56,12 +57,14 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: fontFamilyInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <ThemeProvider>
-          <AppHeader />
-          <div className="flex-1">{children}</div>
-          <CommandPalette />
-          <Toaster position="bottom-right" />
-        </ThemeProvider>
+        <ClerkProvider>
+          <ThemeProvider>
+            <AppHeader />
+            <div className="flex-1">{children}</div>
+            <CommandPalette />
+            <Toaster position="bottom-right" />
+          </ThemeProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

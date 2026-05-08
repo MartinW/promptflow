@@ -1,3 +1,4 @@
+import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { pickProvider } from "@/lib/aiprovider";
 import { checkLangfuse } from "@/lib/langfuse";
@@ -40,6 +41,7 @@ export async function AppHeader() {
               <span>{provider.label}</span>
             </div>
           </div>
+          <UserButton />
         </div>
       </div>
     </header>

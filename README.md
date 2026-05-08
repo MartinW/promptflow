@@ -69,8 +69,22 @@ Both Langfuse and OpenRouter are bring-your-own-keys. Set in `apps/web/.env.loca
 | `LANGFUSE_HOST` | no | Defaults to `https://cloud.langfuse.com` |
 | `OPENROUTER_API_KEY` | optional | Required for AIPlay streaming |
 | `AI_GATEWAY_API_KEY` | optional | Experimental: when set, AIPlay streams via Vercel AI SDK + AI Gateway instead of OpenRouter (takes priority if both are set). Sends AI SDK telemetry to Langfuse via the `@langfuse/otel` span processor. |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | yes | Clerk publishable key. Auto-provisioned in Vercel via the Clerk Marketplace integration. |
+| `CLERK_SECRET_KEY` | yes | Clerk secret key. Auto-provisioned in Vercel via the Clerk Marketplace integration. |
 
 If any keys are missing, the app renders graceful "not configured" states instead of crashing.
+
+## Authentication
+
+`apps/web` is gated by [Clerk](https://clerk.com). All routes are default-deny — `clerkMiddleware()` calls `auth.protect()` on everything except `/sign-in` and `/sign-up`, redirecting unauthenticated requests to Clerk's hosted Account Portal. CLI and MCP server are unaffected (they talk to OpenRouter and Langfuse directly, not to the web app).
+
+**Setup**
+
+1. Install the [Clerk integration from Vercel Marketplace](https://vercel.com/marketplace/clerk) on the project — this auto-provisions `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` as environment variables.
+2. In the Clerk dashboard → **User & Authentication → Restrictions**, set sign-up to **Restricted** and add an allowlist of permitted email addresses. Without this, anyone with a Google/email account can sign up.
+3. For local dev, copy the same keys into `apps/web/.env.local`.
+
+This is a solo-dev gate today; the planned Pro tier will introduce multi-tenant orgs (Clerk supports this natively when ready).
 
 ## Features
 
