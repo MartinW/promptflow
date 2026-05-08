@@ -61,6 +61,32 @@ const STYLES: StyleOption[] = [
       font: "var(--font-jetbrains)",
     },
   },
+  {
+    value: "lovely",
+    label: "Lovely",
+    description: "Pillowy, gradient, playful.",
+    preview: {
+      radius: "1rem",
+      border: "1px solid oklch(0.55 0.24 320 / 30%)",
+      shadow: "0 8px 24px -6px oklch(0.55 0.24 320 / 25%)",
+      font: "var(--font-geist-sans)",
+      bg: "linear-gradient(135deg, oklch(0.62 0.24 295), oklch(0.62 0.26 330) 50%, oklch(0.7 0.22 25))",
+      fg: "oklch(0.99 0.006 320)",
+    },
+  },
+  {
+    value: "quietly",
+    label: "Quietly",
+    description: "Calm, warm, generous.",
+    preview: {
+      radius: "0.5rem",
+      border: "1px solid oklch(0.88 0.018 70)",
+      shadow: "0 6px 18px -6px oklch(0.3 0.03 250 / 12%)",
+      font: "var(--font-geist-sans)",
+      bg: "oklch(0.97 0.012 75)",
+      fg: "oklch(0.24 0.02 250)",
+    },
+  },
 ];
 
 type FamilyOption = {
@@ -94,6 +120,18 @@ const FAMILIES: FamilyOption[] = [
     label: "Sunset",
     description: "Warm oranges.",
     swatch: { bg: "oklch(0.22 0.07 35)", primary: "oklch(0.72 0.18 45)", accent: "oklch(0.58 0.2 40)" },
+  },
+  {
+    value: "lovely",
+    label: "Lovely",
+    description: "Magenta, pink, coral.",
+    swatch: { bg: "oklch(0.99 0.006 320)", primary: "oklch(0.58 0.24 320)", accent: "oklch(0.7 0.22 25)" },
+  },
+  {
+    value: "quietly",
+    label: "Quietly",
+    description: "Cream, ink, hush.",
+    swatch: { bg: "oklch(0.97 0.012 75)", primary: "oklch(0.3 0.03 250)", accent: "oklch(0.7 0.06 65)" },
   },
 ];
 
@@ -168,12 +206,14 @@ export function ThemePicker() {
               >
                 <div
                   aria-hidden
-                  className="flex h-12 w-full items-center justify-center bg-muted/40"
+                  className={cn("flex h-12 w-full items-center justify-center", !preview.bg && "bg-muted/40")}
                   style={{
                     borderRadius: preview.radius,
                     border: preview.border,
                     boxShadow: preview.shadow,
                     fontFamily: preview.font,
+                    background: preview.bg,
+                    color: preview.fg,
                   }}
                 >
                   <span className="text-base font-medium" style={{ fontFamily: preview.font }}>
