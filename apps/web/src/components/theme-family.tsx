@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-export const THEME_FAMILIES = ["default", "midnight", "forest", "sunset"] as const;
+export const THEME_FAMILIES = ["default", "midnight", "forest", "sunset", "lovely", "quietly"] as const;
 export type ThemeFamily = (typeof THEME_FAMILIES)[number];
 
 const STORAGE_KEY = "theme-family";

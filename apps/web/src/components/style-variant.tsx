@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-export const STYLE_VARIANTS = ["clean", "brutalist", "editorial", "terminal"] as const;
+export const STYLE_VARIANTS = ["clean", "brutalist", "editorial", "terminal", "lovely", "quietly"] as const;
 export type StyleVariant = (typeof STYLE_VARIANTS)[number];
 
 const STORAGE_KEY = "style-variant";
