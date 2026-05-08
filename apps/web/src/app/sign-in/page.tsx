@@ -13,7 +13,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <div className="flex flex-col gap-1">
           <h1 className="text-lg font-semibold">Sign in to PromptFlow</h1>
           <p className="text-sm text-muted-foreground">
-            Use your Google or GitHub account.
+            Use your Google account.
           </p>
         </div>
         {error === "AccessDenied" && (
@@ -32,19 +32,6 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             className="w-full rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted/40 transition-colors"
           >
             Continue with Google
-          </button>
-        </form>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("github", { redirectTo });
-          }}
-        >
-          <button
-            type="submit"
-            className="w-full rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted/40 transition-colors"
-          >
-            Continue with GitHub
           </button>
         </form>
       </div>

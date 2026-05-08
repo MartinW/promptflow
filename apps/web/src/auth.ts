@@ -1,5 +1,4 @@
 import NextAuth from "next-auth";
-import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 
 const parseList = (s: string | undefined) =>
@@ -21,7 +20,7 @@ function isAllowed(email: string | null | undefined): boolean {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [Google, GitHub],
+  providers: [Google],
   pages: { signIn: "/sign-in" },
   callbacks: {
     signIn({ user }) {

@@ -71,7 +71,6 @@ Both Langfuse and OpenRouter are bring-your-own-keys. Set in `apps/web/.env.loca
 | `AI_GATEWAY_API_KEY` | optional | Experimental: when set, AIPlay streams via Vercel AI SDK + AI Gateway instead of OpenRouter (takes priority if both are set). Sends AI SDK telemetry to Langfuse via the `@langfuse/otel` span processor. |
 | `AUTH_SECRET` | yes | Random secret used to sign session JWTs. Generate with `bunx auth secret`. |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | yes | Google OAuth credentials (see Authentication below). |
-| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | yes | GitHub OAuth credentials. |
 | `AUTH_ALLOWED_EMAILS` | optional | Comma-separated email allowlist. Blank = no email restriction. |
 | `AUTH_ALLOWED_EMAIL_DOMAINS` | optional | Comma-separated domain allowlist. Blank = no domain restriction. If both `EMAILS` and `DOMAINS` are blank, sign-in is open. |
 
@@ -90,10 +89,9 @@ CLI and MCP server are unaffected — they call OpenRouter and Langfuse directly
    - `http://localhost:3003/api/auth/callback/google` (dev)
    - `https://<your-prod-host>/api/auth/callback/google` (prod)
    Copy the client ID and secret into `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
-3. **GitHub OAuth:** [github.com → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers) → *New OAuth App*. Authorization callback URL: `https://<your-host>/api/auth/callback/github`. Copy client ID and secret into `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`.
-4. **Restrict access (optional but recommended for self-hosted):** set `AUTH_ALLOWED_EMAILS` and/or `AUTH_ALLOWED_EMAIL_DOMAINS`. With both empty, anyone with a Google or GitHub account can sign in.
+3. **Restrict access (optional but recommended for self-hosted):** set `AUTH_ALLOWED_EMAILS` and/or `AUTH_ALLOWED_EMAIL_DOMAINS`. With both empty, anyone with a Google account can sign in.
 
-**Self-hosters** can swap providers (drop GitHub, add Email magic link, add credentials, etc.) by editing `apps/web/src/auth.ts`. Auth.js supports [80+ providers](https://authjs.dev/getting-started/authentication/oauth) out of the box.
+**Self-hosters** can swap or add providers (GitHub, Email magic link, credentials, etc.) by editing `apps/web/src/auth.ts`. Auth.js supports [80+ providers](https://authjs.dev/getting-started/authentication/oauth) out of the box.
 
 ## Features
 
