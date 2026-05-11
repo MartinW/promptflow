@@ -69,25 +69,27 @@ function Inner({
     const COL_GAP = 160;
     const ROW_GAP = 24;
 
-    // Three-column layout: parents (left) → focused (centre) → children (right)
-    const parentNames = reverseRefs.filter((n) => !liveRefs.includes(n));
+    // Focused prompt on the LEFT, all related prompts on the RIGHT.
+    // Two groups on the right: prompts this one references (children,
+    // outgoing) stacked first, then prompts that reference this one
+    // (consumers, incoming) below — separated by a gap.
     const childNames = liveRefs;
+    const consumerNames = reverseRefs.filter((n) => !liveRefs.includes(n));
+    const rightNames = [...childNames, ...consumerNames];
 
-    const centreX = (parentNames.length > 0 ? NODE_W + COL_GAP : 0);
-    const rightX = centreX + NODE_W + COL_GAP;
+    const rightX = NODE_W + COL_GAP;
 
     function stackY(index: number, total: number, centreY: number): number {
       const totalHeight = total * NODE_H + (total - 1) * ROW_GAP;
       return centreY - totalHeight / 2 + index * (NODE_H + ROW_GAP);
     }
 
-    const maxColumn = Math.max(parentNames.length, childNames.length, 1);
-    const centreY = (maxColumn * (NODE_H + ROW_GAP)) / 2;
+    const centreY = Math.max(rightNames.length, 1) * (NODE_H + ROW_GAP) / 2;
 
     const focusNode: Node = {
       id: focusedName,
       type: "prompt",
-      position: { x: centreX, y: centreY - NODE_H / 2 },
+      position: { x: 0, y: centreY - NODE_H / 2 },
       data: {
         name: focusedName,
         version: focusedVersion,
@@ -98,28 +100,12 @@ function Inner({
       },
     };
 
-    const parentNodes: Node[] = parentNames.map((name, i) => {
+    const rightNodes: Node[] = rightNames.map((name, i) => {
       const meta = corpusByName[name];
       return {
         id: name,
         type: "prompt",
-        position: { x: 0, y: stackY(i, parentNames.length, centreY) },
-        data: {
-          name,
-          version: meta?.version ?? 0,
-          tags: meta?.tags ?? [],
-          references: meta?.references ?? 0,
-          referencedBy: meta?.referencedBy ?? 0,
-        },
-      };
-    });
-
-    const childNodes: Node[] = childNames.map((name, i) => {
-      const meta = corpusByName[name];
-      return {
-        id: name,
-        type: "prompt",
-        position: { x: rightX, y: stackY(i, childNames.length, centreY) },
+        position: { x: rightX, y: stackY(i, rightNames.length, centreY) },
         data: {
           name,
           version: meta?.version ?? 0,
@@ -143,7 +129,7 @@ function Inner({
       edgeList.push({ id: `${parent}→${focusedName}`, source: parent, target: focusedName });
     }
 
-    return { nodes: [focusNode, ...parentNodes, ...childNodes], edges: edgeList };
+    return { nodes: [focusNode, ...rightNodes], edges: edgeList };
   }, [focusedName, focusedVersion, focusedTags, body, reverseRefs, corpusByName]);
 
   const nodeTypes = useMemo(() => NODE_TYPES, []);
