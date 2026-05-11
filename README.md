@@ -2,7 +2,7 @@
 
 A better UI for [Langfuse](https://langfuse.com) prompt management. Open core.
 
-PromptFlow is a frontend for the prompt-management half of Langfuse, with the UX bent toward authoring and iteration: tag-first organisation, a Cmd-K palette, inline diffs, an integrated playground (AIPlay), and — coming in the Pro tier — eval datasets, LLM-as-judge, A/B testing with statistical significance.
+PromptFlow is a frontend for the prompt-management half of Langfuse, with the UX bent toward authoring and iteration: tag-first organisation, a Cmd-K palette, inline diffs, an integrated playground, and — coming in the Pro tier — eval datasets, LLM-as-judge, A/B testing with statistical significance.
 
 Langfuse is the storage layer; PromptFlow is the editor for it. The same prompts get consumed by separate iOS apps (different repos) to demonstrate remote prompt management for production apps.
 
@@ -24,7 +24,7 @@ One Langfuse-backed prompt registry, multiple consumers:
    │  apps/web        │  │  apps/cli        │  │  apps/mcp-server │
    │  (Next.js 16)    │  │  (Commander)     │  │  (MCP stdio)     │
    │  Authoring UI    │  │  Terminal CRUD   │  │  Prompts as MCP  │
-   │  + AIPlay run    │  │  + run via OR    │  │  prompts/tools   │
+   │  + Playground    │  │  + run via OR    │  │  prompts/tools   │
    └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘
             │                     │                     │
             └────────┬────────────┴──────┬──────────────┘
@@ -53,34 +53,41 @@ git clone https://github.com/MartinW/promptflow.git
 cd promptflow
 bun install
 cp apps/web/.env.example apps/web/.env.local
-# fill in your Langfuse + OpenRouter keys
+# minimum: fill in LANGFUSE_PUBLIC_KEY + LANGFUSE_SECRET_KEY
+# optional: OPENROUTER_API_KEY (or AI_GATEWAY_API_KEY) for the Playground
 bun run dev
-# → http://localhost:3000
+# → http://localhost:3003
 ```
+
+The dev server runs open by default — no sign-in is required. See **Authentication** below to gate access.
 
 ## Configuration
 
-Both Langfuse and OpenRouter are bring-your-own-keys. Set in `apps/web/.env.local`:
+Bring your own keys. Set in `apps/web/.env.local`:
 
 | Variable | Required | Purpose |
 |---|---|---|
 | `LANGFUSE_PUBLIC_KEY` | yes | Langfuse project public key |
 | `LANGFUSE_SECRET_KEY` | yes | Langfuse project secret key (write access) |
 | `LANGFUSE_HOST` | no | Defaults to `https://cloud.langfuse.com` |
-| `OPENROUTER_API_KEY` | optional | Required for AIPlay streaming |
-| `AI_GATEWAY_API_KEY` | optional | Experimental: when set, AIPlay streams via Vercel AI SDK + AI Gateway instead of OpenRouter (takes priority if both are set). Sends AI SDK telemetry to Langfuse via the `@langfuse/otel` span processor. |
-| `AUTH_SECRET` | yes | Random secret used to sign session JWTs. Generate with `bunx auth secret`. |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | yes | Google OAuth credentials (see Authentication below). |
-| `AUTH_ALLOWED_EMAILS` | optional | Comma-separated email allowlist. Blank = no email restriction. |
-| `AUTH_ALLOWED_EMAIL_DOMAINS` | optional | Comma-separated domain allowlist. Blank = no domain restriction. If both `EMAILS` and `DOMAINS` are blank, sign-in is open. |
+| `OPENROUTER_API_KEY` | optional | Required for Playground streaming |
+| `AI_GATEWAY_API_KEY` | optional | Experimental: when set, the Playground streams via Vercel AI SDK + AI Gateway instead of OpenRouter (takes priority if both are set). Sends AI SDK telemetry to Langfuse via the `@langfuse/otel` span processor. |
+| `AUTH_SECRET` | optional | Enables Google sign-in when all three `AUTH_*` vars are set. Generate with `bunx auth secret`. |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | optional | Google OAuth credentials (see Authentication below). |
+| `AUTH_ALLOWED_EMAILS` | optional | Comma-separated email allowlist. Only relevant when auth is enabled. Blank = no email restriction. |
+| `AUTH_ALLOWED_EMAIL_DOMAINS` | optional | Comma-separated domain allowlist. Only relevant when auth is enabled. Blank = no domain restriction. If both `EMAILS` and `DOMAINS` are blank, any Google account can sign in. |
 
 If any keys are missing, the app renders graceful "not configured" states instead of crashing.
 
 ## Authentication
 
-`apps/web` is gated by [Auth.js v5](https://authjs.dev) (next-auth) with a default-deny middleware: every route except `/sign-in` and `/api/auth/*` redirects unauthenticated users to a sign-in page. JWT session strategy means **no database is required** — the session lives in a signed cookie. Same choice [Langfuse](https://langfuse.com) makes for the same reason.
+**By default, the deployment is open** — anyone with the URL can use it. This is the simplest path for self-hosting on your own machine or a private network.
 
-CLI and MCP server are unaffected — they call OpenRouter and Langfuse directly, not the web app's API routes.
+> ⚠️ **If you deploy without auth on a public URL, anyone who finds it can use your Langfuse data and burn through your OpenRouter / AI Gateway quota.** Either configure auth (below), put the app behind a VPN or Cloudflare Access, or both. There is no built-in rate-limiting.
+
+To enable Google sign-in, set **all three** of `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET`. The middleware then redirects every unauthenticated request to `/sign-in` (Auth.js v5, JWT session strategy — no database required).
+
+CLI and MCP server are unaffected by web auth — they call Langfuse directly with their own credentials.
 
 **Setup**
 
@@ -89,7 +96,9 @@ CLI and MCP server are unaffected — they call OpenRouter and Langfuse directly
    - `http://localhost:3003/api/auth/callback/google` (dev)
    - `https://<your-prod-host>/api/auth/callback/google` (prod)
    Copy the client ID and secret into `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
-3. **Restrict access (optional but recommended for self-hosted):** set `AUTH_ALLOWED_EMAILS` and/or `AUTH_ALLOWED_EMAIL_DOMAINS`. With both empty, anyone with a Google account can sign in.
+3. **Restrict access (recommended for self-hosted):** set `AUTH_ALLOWED_EMAILS` and/or `AUTH_ALLOWED_EMAIL_DOMAINS`. With both empty, any Google account can sign in.
+
+**Partial config = no auth.** All three of `AUTH_SECRET` / `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` must be present, or auth is disabled entirely (fail-open). This is deliberate so a typo doesn't brick your deployment.
 
 **Self-hosters** can swap or add providers (GitHub, Email magic link, credentials, etc.) by editing `apps/web/src/auth.ts`. Auth.js supports [80+ providers](https://authjs.dev/getting-started/authentication/oauth) out of the box.
 
@@ -98,7 +107,7 @@ CLI and MCP server are unaffected — they call OpenRouter and Langfuse directly
 **Web** (`apps/web`)
 - Prompt list with tag filtering, search, version sidebar, inline diff, Cmd-K palette
 - Compose editor with optional System Prompt + User Context fields; saves text-vs-chat type automatically
-- AIPlay playground — streams via OpenRouter or Vercel AI SDK + AI Gateway (env-selected), live token/cost/latency, provider-grouped model picker, per-request provider badge
+- Playground — streams via OpenRouter or Vercel AI SDK + AI Gateway (env-selected), live token/cost/latency, provider-grouped model picker, per-request provider badge
 - Vercel AI SDK path emits real-time traces to Langfuse via `@langfuse/otel` (same native ingest path OpenRouter uses)
 - Drafts by default — explicit "Promote to production" checkbox
 

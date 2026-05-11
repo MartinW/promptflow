@@ -5,7 +5,7 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 // responses — Next.js dev doesn't reliably flush long-running batch buffers,
 // and even with exportMode: "immediate" the upload is async.
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({
-  baseUrl: process.env.LANGFUSE_BASE_URL ?? process.env.LANGFUSE_HOST,
+  baseUrl: process.env.LANGFUSE_HOST,
   exportMode: "immediate",
 });
 
