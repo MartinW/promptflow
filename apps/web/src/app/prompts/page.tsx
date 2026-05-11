@@ -1,14 +1,15 @@
 import { findDuplicates, matchesTags, PromptFlowError } from "@promptflow/core";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { GlobalCanvas } from "@/components/canvas/global-canvas";
 import { DuplicatesResults } from "@/components/duplicates/duplicates-results";
 import { FolderTree } from "@/components/folder-tree/folder-tree";
 import { FilterToolbar } from "@/components/prompts/filter-toolbar";
+import { SearchInput } from "@/components/prompts/search-input";
 import { TagBadge } from "@/components/tags/tag-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ViewToggle, type PromptsView } from "@/components/view-toggle";
+import { VIEW_COOKIE_NAME, ViewToggle, type PromptsView } from "@/components/view-toggle";
 import { getCorpus, type CorpusPrompt } from "@/lib/corpus";
 import { isLangfuseConfigured } from "@/lib/server-client";
 
@@ -35,7 +36,11 @@ export default async function PromptsPage({
   const query = params.q?.trim().toLowerCase();
   const selectedTags = parseTagsParam(params.tag);
   const mode: "and" | "or" = params.mode === "or" ? "or" : "and";
-  const view: PromptsView = parseView(params.view);
+  // URL param wins; otherwise fall back to the `pf-view` cookie set by the
+  // ViewToggle so the user's last choice persists across navigation back to
+  // /prompts. List is the final default.
+  const cookieView = (await cookies()).get(VIEW_COOKIE_NAME)?.value;
+  const view: PromptsView = parseView(params.view ?? cookieView);
   const folderPath = params.folder?.trim() ?? "";
 
   let prompts: CorpusPrompt[];
@@ -98,13 +103,8 @@ export default async function PromptsPage({
         </aside>
 
         <section className="min-w-0">
-          <form className="flex flex-wrap items-center gap-3 mb-4">
-            <Input
-              name="q"
-              placeholder="Search by name..."
-              defaultValue={query ?? ""}
-              className="max-w-xs"
-            />
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <SearchInput initial={query ?? ""} className="max-w-xs" />
             {folderPath ? (
               <span className="text-xs text-muted-foreground">
                 in <span className="font-mono">{folderPath}/</span>
@@ -113,7 +113,7 @@ export default async function PromptsPage({
                 </Link>
               </span>
             ) : null}
-          </form>
+          </div>
 
           {error ? <ErrorBanner message={error} /> : null}
 

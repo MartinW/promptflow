@@ -39,8 +39,8 @@ const NODE_TYPES = { prompt: PromptNode };
 /**
  * Mini canvas for the edit page. Centres on the focused prompt and branches
  * out to whatever it references (parsed from the live body — typing
- * `{{@foo}}` adds the edge immediately) plus the prompts that already
- * reference it.
+ * Langfuse reference tag adds the edge immediately) plus the prompts that
+ * already reference it.
  *
  * Renders ReactFlow directly so the node/edge set is fully controlled — the
  * shared `<PromptCanvas>` uses internal state for drag/drop, which doesn't

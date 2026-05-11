@@ -1,7 +1,9 @@
 "use client";
 
-import { validatePromptTemplate } from "@promptflow/core";
+import { parseReferenceDetails, type PromptReference, validatePromptTemplate } from "@promptflow/core";
+import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
+import { HighlightedTextarea } from "@/components/highlighted-textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { aggregateVariables, type ComposeShape } from "@/lib/prompt-shape";
@@ -68,6 +70,26 @@ export function PromptComposeEditor({
   }
 
   const variables = useMemo(() => aggregateVariables(value), [value]);
+  const references = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Array<{ ref: PromptReference; fields: Array<"system" | "userContext" | "main"> }> = [];
+    function consume(field: "system" | "userContext" | "main", text: string) {
+      for (const ref of parseReferenceDetails(text)) {
+        const existing = out.find((o) => o.ref.name === ref.name);
+        if (existing) {
+          if (!existing.fields.includes(field)) existing.fields.push(field);
+          continue;
+        }
+        if (seen.has(ref.name)) continue;
+        seen.add(ref.name);
+        out.push({ ref, fields: [field] });
+      }
+    }
+    consume("system", value.system);
+    consume("userContext", value.userContext);
+    consume("main", value.main);
+    return out;
+  }, [value]);
   const issues = useMemo(() => {
     const all = [
       ...validatePromptTemplate(value.system).issues.map((i) => ({
@@ -150,6 +172,7 @@ export function PromptComposeEditor({
         rows={10}
       />
 
+      <ReferencesPanel references={references} />
       <div className="flex flex-wrap items-start justify-between gap-3 text-xs">
         <VariablesPanel variables={variables} />
         <IssuesPanel issues={issues} />
@@ -211,24 +234,14 @@ function ComposeField({
         </label>
         {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
       </div>
-      <textarea
+      <HighlightedTextarea
         id={id}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onSelect={(e) => {
-          const target = e.target as HTMLTextAreaElement;
-          const start = target.selectionStart;
-          const end = target.selectionEnd;
-          if (onSelect) {
-            const text = start !== end ? target.value.slice(start, end) : "";
-            onSelect(start, end, text);
-          }
-        }}
-        rows={rows}
+        onChange={onChange}
+        onSelect={onSelect}
         placeholder={placeholder}
         disabled={disabled}
-        spellCheck={false}
-        className="block w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-sm leading-6 outline-none ring-offset-background placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+        rows={rows}
       />
     </div>
   );
@@ -252,6 +265,46 @@ function VariablesPanel({ variables }: { variables: string[] }) {
       ))}
     </div>
   );
+}
+
+function ReferencesPanel({
+  references,
+}: {
+  references: Array<{ ref: PromptReference; fields: Array<"system" | "userContext" | "main"> }>;
+}) {
+  if (references.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-muted-foreground uppercase tracking-wide">References</span>
+      {references.map(({ ref, fields }) => {
+        const pin =
+          ref.version !== undefined ? `v${ref.version}` : ref.label ?? "latest";
+        const fieldLabel = fields.map((f) => fieldDisplayName(f)).join(", ");
+        return (
+          <Link
+            key={ref.name}
+            href={`/prompts/${encodeURIComponent(ref.name)}`}
+            className="inline-flex items-center gap-1 rounded-md border bg-emerald-500/15 px-2 py-0.5 font-mono text-[11px] text-emerald-700 ring-1 ring-emerald-500/40 hover:bg-emerald-500/25 dark:text-emerald-300"
+            title={`Open ${ref.name} (${pin}) · in ${fieldLabel}`}
+          >
+            @{ref.name}
+            <span className="opacity-70">{pin}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function fieldDisplayName(field: "system" | "userContext" | "main"): string {
+  switch (field) {
+    case "system":
+      return "System";
+    case "userContext":
+      return "User context";
+    case "main":
+      return "Prompt";
+  }
 }
 
 function IssuesPanel({

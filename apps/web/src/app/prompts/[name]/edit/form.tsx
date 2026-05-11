@@ -102,13 +102,14 @@ export function EditPromptForm({
   const hasNeighbours = reverseRefs.length > 0 || Object.keys(corpusByName).length > 0;
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6">
       {hasNeighbours ? (
         <Card className="p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-muted-foreground">Composition graph</span>
             <span className="text-xs text-muted-foreground">
-              live · edges update as you type {"{{@references}}"}
+              live · edges update as you type Langfuse references
             </span>
           </div>
           <PerPromptCanvas
@@ -214,23 +215,30 @@ export function EditPromptForm({
           {pending ? "Saving..." : `Save as v${baseVersion + 1}`}
         </Button>
       </div>
-      {selection ? (
-        <ExtractDialog
-          open={extractOpen}
-          onOpenChange={setExtractOpen}
-          sourceName={name}
-          sourceShape={shape}
-          sourceTags={tags}
-          field={selection.field}
-          selectionStart={selection.start}
-          selectionEnd={selection.end}
-          selectedText={selection.text}
-          onExtracted={(rewrittenShape) => {
-            setShape(rewrittenShape);
-            setSelection(null);
-          }}
-        />
-      ) : null}
     </form>
+    {/* The ExtractDialog lives OUTSIDE the edit form on purpose. React's
+        synthetic event system bubbles submit events through portals along the
+        React tree, so a `<form>` inside a dialog rendered as a child of the
+        edit form would fire the outer form's onSubmit when the user clicks
+        the dialog's "Next" button — saving the prompt and redirecting before
+        the REVIEW step ever paints. */}
+    {selection ? (
+      <ExtractDialog
+        open={extractOpen}
+        onOpenChange={setExtractOpen}
+        sourceName={name}
+        sourceShape={shape}
+        sourceTags={tags}
+        field={selection.field}
+        selectionStart={selection.start}
+        selectionEnd={selection.end}
+        selectedText={selection.text}
+        onExtracted={(rewrittenShape) => {
+          setShape(rewrittenShape);
+          setSelection(null);
+        }}
+      />
+    ) : null}
+    </>
   );
 }

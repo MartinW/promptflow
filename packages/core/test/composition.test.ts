@@ -5,6 +5,9 @@ import type { Prompt, TextPrompt } from "../src/types";
 
 type PromptFixture = Record<string, string | Prompt>;
 
+const ref = (name: string, suffix: "version=1" | "label=production" | "label=latest" = "label=latest") =>
+  `@@@langfusePrompt:name=${name}|${suffix}@@@`;
+
 /**
  * Build a fake client backed by an in-memory map of name → prompt. Strings
  * are auto-wrapped as text prompts. `getPrompt` for a missing name throws.
@@ -60,9 +63,9 @@ describe("resolvePrompt", () => {
     expect(result.cycles).toEqual([]);
   });
 
-  it("expands a single reference inline", async () => {
+  it("expands a single label-pinned reference inline", async () => {
     const client = fakeClient({
-      root: "Header.\n{{@shared/intro}}\nFooter.",
+      root: `Header.\n${ref("shared/intro", "label=latest")}\nFooter.`,
       "shared/intro": "Hi from intro!",
     });
     const result = await resolvePrompt("root", client);
@@ -72,8 +75,8 @@ describe("resolvePrompt", () => {
 
   it("expands nested references", async () => {
     const client = fakeClient({
-      a: "A({{@b}})",
-      b: "B({{@c}})",
+      a: `A(${ref("b")})`,
+      b: `B(${ref("c")})`,
       c: "C",
     });
     const result = await resolvePrompt("a", client);
@@ -84,40 +87,40 @@ describe("resolvePrompt", () => {
   it("substitutes variables after references are expanded", async () => {
     const client = fakeClient({
       greet: "Hello, {{name}}!",
-      root: "{{@greet}} You are user {{name}}.",
+      root: `${ref("greet")} You are user {{name}}.`,
     });
     const result = await resolvePrompt("root", client, { variables: { name: "Ada" } });
     expect(result.body).toBe("Hello, Ada! You are user Ada.");
   });
 
   it("records missing references as data by default", async () => {
-    const client = fakeClient({ root: "before {{@nope}} after" });
+    const client = fakeClient({ root: `before ${ref("nope")} after` });
     const result = await resolvePrompt("root", client);
-    expect(result.body).toBe("before {{@nope}} after");
+    expect(result.body).toBe(`before ${ref("nope")} after`);
     expect(result.missing).toEqual(["nope"]);
     expect(result.resolvedRefs).toEqual([]);
   });
 
   it("throws on missing references when onMissing=throw", async () => {
-    const client = fakeClient({ root: "x {{@nope}} y" });
+    const client = fakeClient({ root: `x ${ref("nope")} y` });
     await expect(resolvePrompt("root", client, { onMissing: "throw" })).rejects.toThrow();
   });
 
   it("detects a direct cycle and marks it without hanging", async () => {
     const client = fakeClient({
-      a: "A says {{@b}}",
-      b: "B says {{@a}}",
+      a: `A says ${ref("b")}`,
+      b: `B says ${ref("a")}`,
     });
     const result = await resolvePrompt("a", client);
     expect(result.cycles.length).toBeGreaterThan(0);
-    expect(result.body).toContain("{{@a:cycle}}");
+    expect(result.body).toContain("[[cycle:a]]");
   });
 
   it("detects a longer cycle (a → b → c → a)", async () => {
     const client = fakeClient({
-      a: "[{{@b}}]",
-      b: "[{{@c}}]",
-      c: "[{{@a}}]",
+      a: `[${ref("b")}]`,
+      b: `[${ref("c")}]`,
+      c: `[${ref("a")}]`,
     });
     const result = await resolvePrompt("a", client);
     expect(result.cycles.some((cycle) => cycle.includes("a"))).toBe(true);
@@ -125,9 +128,9 @@ describe("resolvePrompt", () => {
 
   it("truncates beyond maxDepth", async () => {
     const client = fakeClient({
-      a: "{{@b}}",
-      b: "{{@c}}",
-      c: "{{@d}}",
+      a: ref("b"),
+      b: ref("c"),
+      c: ref("d"),
       d: "deep",
     });
     const result = await resolvePrompt("a", client, { maxDepth: 2 });
@@ -137,7 +140,7 @@ describe("resolvePrompt", () => {
   it("dedupes the same reference used twice in one body", async () => {
     const client = fakeClient({
       shared: "X",
-      root: "{{@shared}} and {{@shared}}",
+      root: `${ref("shared")} and ${ref("shared")}`,
     });
     const result = await resolvePrompt("root", client);
     expect(result.body).toBe("X and X");
@@ -152,7 +155,7 @@ describe("resolvePrompt", () => {
         name: "chatroot",
         version: 1,
         prompt: [
-          { role: "system", content: "{{@sysblock}}" },
+          { role: "system", content: ref("sysblock") },
           { role: "user", content: "Hello." },
         ],
         config: null,

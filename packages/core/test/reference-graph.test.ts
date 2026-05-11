@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildReferenceGraph, subgraphFor } from "../src/reference-graph";
 
+const ref = (name: string, suffix: "label=latest" | "label=production" | "version=1" = "label=latest") =>
+  `@@@langfusePrompt:name=${name}|${suffix}@@@`;
+
 describe("buildReferenceGraph", () => {
   it("returns empty for an empty corpus", () => {
     const graph = buildReferenceGraph([]);
@@ -12,7 +15,7 @@ describe("buildReferenceGraph", () => {
 
   it("records outgoing and incoming edges", () => {
     const graph = buildReferenceGraph([
-      { name: "root", body: "Use {{@shared/intro}} please" },
+      { name: "root", body: `Use ${ref("shared/intro")} please` },
       { name: "shared/intro", body: "Hi" },
     ]);
     expect(graph.nodes.get("root")?.references).toEqual(["shared/intro"]);
@@ -20,28 +23,28 @@ describe("buildReferenceGraph", () => {
   });
 
   it("flags missing references", () => {
-    const graph = buildReferenceGraph([{ name: "root", body: "{{@nope}}" }]);
+    const graph = buildReferenceGraph([{ name: "root", body: ref("nope") }]);
     expect(graph.missing).toEqual(["nope"]);
     expect(graph.nodes.get("root")?.references).toEqual([]);
   });
 
   it("detects a 2-cycle (a → b → a)", () => {
     const graph = buildReferenceGraph([
-      { name: "a", body: "{{@b}}" },
-      { name: "b", body: "{{@a}}" },
+      { name: "a", body: ref("b") },
+      { name: "b", body: ref("a") },
     ]);
     expect(graph.cycles.length).toBeGreaterThan(0);
   });
 
   it("detects a self-loop", () => {
-    const graph = buildReferenceGraph([{ name: "a", body: "{{@a}}" }]);
+    const graph = buildReferenceGraph([{ name: "a", body: ref("a") }]);
     expect(graph.cycles).toEqual([["a", "a"]]);
   });
 
   it("identifies orphans (no edges in or out)", () => {
     const graph = buildReferenceGraph([
       { name: "alone", body: "no refs here" },
-      { name: "a", body: "{{@b}}" },
+      { name: "a", body: ref("b") },
       { name: "b", body: "leaf" },
     ]);
     expect(graph.orphans).toEqual(["alone"]);
@@ -51,8 +54,8 @@ describe("buildReferenceGraph", () => {
 describe("subgraphFor", () => {
   it("returns a focused subgraph from a root", () => {
     const graph = buildReferenceGraph([
-      { name: "root", body: "{{@a}} {{@b}}" },
-      { name: "a", body: "{{@c}}" },
+      { name: "root", body: `${ref("a")} ${ref("b")}` },
+      { name: "a", body: ref("c") },
       { name: "b", body: "leaf b" },
       { name: "c", body: "leaf c" },
       { name: "unrelated", body: "ignore" },
@@ -63,9 +66,9 @@ describe("subgraphFor", () => {
 
   it("respects depth", () => {
     const graph = buildReferenceGraph([
-      { name: "root", body: "{{@a}}" },
-      { name: "a", body: "{{@b}}" },
-      { name: "b", body: "{{@c}}" },
+      { name: "root", body: ref("a") },
+      { name: "a", body: ref("b") },
+      { name: "b", body: ref("c") },
       { name: "c", body: "leaf" },
     ]);
     const sub = subgraphFor(graph, "root", { depth: 1 });
@@ -75,7 +78,7 @@ describe("subgraphFor", () => {
 
   it("includes reverse-references when asked", () => {
     const graph = buildReferenceGraph([
-      { name: "parent", body: "{{@target}}" },
+      { name: "parent", body: ref("target") },
       { name: "target", body: "leaf" },
     ]);
     const sub = subgraphFor(graph, "target", { depth: 0, includeReverse: true });

@@ -1,6 +1,11 @@
 "use server";
 
-import { isPlaceholder, PromptFlowError, type Prompt } from "@promptflow/core";
+import {
+  formatReferenceTag,
+  isPlaceholder,
+  PromptFlowError,
+  type Prompt,
+} from "@promptflow/core";
 import { revalidatePath } from "next/cache";
 import { getCorpus, invalidateCorpus } from "@/lib/corpus";
 import { buildSaveInput, type ComposeShape } from "@/lib/prompt-shape";
@@ -151,7 +156,11 @@ export async function extractPromptAction(formData: FormData): Promise<ExtractPr
     return { ok: false, error: "Selection is empty" };
   }
 
-  const referenceToken = `{{@${newName}}}`;
+  // Use Langfuse's native composability syntax pinned to `latest` — that way
+  // edits to the just-created extracted prompt propagate to all callers
+  // without re-pinning. Users can switch to version pins later via the
+  // Langfuse UI.
+  const referenceToken = formatReferenceTag({ name: newName, label: "latest" });
   const rewrittenField = fieldText.slice(0, selectionStart) + referenceToken + fieldText.slice(selectionEnd);
   const rewrittenShape: ComposeShape = { ...sourceShape, [fieldKey]: rewrittenField };
 
@@ -190,7 +199,7 @@ export async function extractPromptAction(formData: FormData): Promise<ExtractPr
     const sourceInput = buildSaveInput(rewrittenShape, {
       name: sourceName,
       tags: sourceTags,
-      commitMessage: commitMessage || `Extracted shared block to {{@${newName}}}`,
+      commitMessage: commitMessage || `Extracted shared block to @${newName}`,
     });
     const saved = await client.createPrompt(sourceInput);
     sourceNewVersion = saved.version;
@@ -219,7 +228,7 @@ export async function extractPromptAction(formData: FormData): Promise<ExtractPr
           targetPrompt,
           snippet,
           referenceToken,
-          commitMessage || `Extracted shared block to {{@${newName}}}`,
+          commitMessage || `Extracted shared block to @${newName}`,
         );
         if (!rewrittenInput) {
           failedTargets.push({ name: target, error: "Snippet not found at apply time" });
@@ -292,7 +301,7 @@ export async function bulkExtractDuplicateAction(
   if (targetNames.length === 0) return { ok: false, error: "Pick at least one target prompt" };
 
   const client = getServerClient();
-  const referenceToken = `{{@${newName}}}`;
+  const referenceToken = formatReferenceTag({ name: newName, label: "latest" });
 
   try {
     const existing = await client.listPrompts({ name: newName, limit: 1 });
@@ -325,7 +334,7 @@ export async function bulkExtractDuplicateAction(
         targetPrompt,
         snippet,
         referenceToken,
-        commitMessage || `Replaced shared block with {{@${newName}}}`,
+        commitMessage || `Replaced shared block with @${newName}`,
       );
       if (!rewrittenInput) {
         failedTargets.push({ name: target, error: "Snippet not found at apply time" });

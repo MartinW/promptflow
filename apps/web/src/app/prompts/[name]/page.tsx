@@ -2,6 +2,7 @@ import { extractVariables, isPlaceholder, type Prompt, PromptFlowError } from "@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DiffViewer } from "@/components/diff-viewer";
+import { HighlightedBody } from "@/components/highlighted-body";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -39,7 +40,10 @@ export default async function PromptDetailPage({
   const client = getServerClient();
   let prompt: Prompt;
   try {
-    prompt = await client.getPrompt(name, { version: requestedVersion });
+    // resolve: false so the detail view can render @@@langfusePrompt tags as
+    // reference chips. Otherwise Langfuse substitutes them server-side and
+    // the references vanish from the body before we see them.
+    prompt = await client.getPrompt(name, { version: requestedVersion, resolve: false });
   } catch (err) {
     if (err instanceof PromptFlowError && err.kind === "not_found") {
       notFound();
@@ -55,7 +59,9 @@ export default async function PromptDetailPage({
   const latestVersion = Math.max(...versions);
   const showDiffAgainstLatest = prompt.type === "text" && prompt.version < latestVersion;
   const latestPrompt = showDiffAgainstLatest
-    ? await client.getPrompt(name, { version: latestVersion }).catch(() => null)
+    ? await client
+        .getPrompt(name, { version: latestVersion, resolve: false })
+        .catch(() => null)
     : null;
 
   return (
@@ -78,7 +84,7 @@ export default async function PromptDetailPage({
               }`}
               className={buttonVariants()}
             >
-              ▶ AIPlay
+              ▶ Playground
             </Link>
             <Link
               href={`/prompts/${encodedName}/edit${
@@ -121,7 +127,7 @@ export default async function PromptDetailPage({
           <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Body</h2>
           <Card className="p-5">
             {prompt.type === "text" ? (
-              <pre className="text-sm font-mono whitespace-pre-wrap leading-6">{prompt.prompt}</pre>
+              <HighlightedBody body={prompt.prompt} />
             ) : (
               <ChatBody prompt={prompt} />
             )}
@@ -233,7 +239,7 @@ function ChatBody({ prompt }: { prompt: Extract<Prompt, { type: "chat" }> }) {
                 <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">
                   {msg.role}
                 </div>
-                <pre className="text-sm font-mono whitespace-pre-wrap leading-6">{msg.content}</pre>
+                <HighlightedBody body={msg.content} />
               </div>
             )}
           </div>

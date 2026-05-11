@@ -25,7 +25,7 @@ interface DoneUsage {
 
 /**
  * Stream a completion through the Vercel AI SDK + AI Gateway, emitting the
- * same SSE event shape as the OpenRouter path so the AIPlay client doesn't
+ * same SSE event shape as the OpenRouter path so the Playground client doesn't
  * need to change. Telemetry is captured via OpenTelemetry (see
  * `instrumentation.ts`) and forwarded to Langfuse.
  */
@@ -49,11 +49,11 @@ export function streamViaVercel(opts: VercelStreamOptions): ReadableStream<Uint8
           messages: modelMessages,
           experimental_telemetry: {
             isEnabled: true,
-            functionId: "aiplay",
+            functionId: "playground",
             metadata: {
               promptName: opts.promptName,
               promptVersion: opts.promptVersion ?? "latest",
-              tags: ["aiplay", "vercel-experiment"],
+              tags: ["playground", "vercel-experiment"],
             },
           },
         });

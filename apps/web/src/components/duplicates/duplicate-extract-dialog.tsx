@@ -48,6 +48,10 @@ export function DuplicateExtractDialog({ open, onOpenChange, group }: DuplicateE
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>): void {
     e.preventDefault();
+    // Stop the submit from bubbling up through the dialog portal to any
+    // ancestor form in the React tree (see ExtractDialog for the same
+    // defence — preserves the dialog if a future host wraps it in a form).
+    e.stopPropagation();
     setError(null);
     setFieldErrors({});
 
@@ -100,8 +104,8 @@ export function DuplicateExtractDialog({ open, onOpenChange, group }: DuplicateE
         <DialogHeader>
           <DialogTitle>Extract duplicate to prompt</DialogTitle>
           <DialogDescription>
-            Creates a new prompt with this block and replaces it with{" "}
-            <code className="font-mono">{`{{@new-name}}`}</code> in each selected target.
+            Creates a new prompt with this block and replaces it with a Langfuse reference tag
+            (pinned to <code className="font-mono">label=latest</code>) in each selected target.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -165,7 +169,7 @@ export function DuplicateExtractDialog({ open, onOpenChange, group }: DuplicateE
               id="dup-commit"
               value={commit}
               onChange={(e) => setCommit(e.target.value)}
-              placeholder={`Replaced shared block with {{@${newName || "new-prompt"}}}`}
+              placeholder={`Replaced shared block with @${newName || "new-prompt"}`}
               disabled={pending}
             />
           </div>

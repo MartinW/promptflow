@@ -18,9 +18,14 @@ const OPTIONS: Array<{ value: PromptsView; label: string; Icon: typeof LayoutLis
   { value: "duplicates", label: "Duplicates", Icon: ScanSearchIcon },
 ];
 
+export const VIEW_COOKIE_NAME = "pf-view";
+const VIEW_COOKIE_MAX_AGE_DAYS = 30;
+
 /**
  * Segmented control that swaps the `?view=` query param on /prompts.
- * Preserves all other params so search + tag filters survive the switch.
+ * Preserves all other params so search + tag filters survive the switch,
+ * and writes a `pf-view` cookie so the choice persists across navigations
+ * back to `/prompts` from a prompt detail page or external link.
  */
 export function ViewToggle({ current, className }: ViewToggleProps) {
   const router = useRouter();
@@ -30,8 +35,11 @@ export function ViewToggle({ current, className }: ViewToggleProps) {
   function switchTo(view: PromptsView): void {
     if (view === current) return;
     const next = new URLSearchParams(params.toString());
-    if (view === "list") next.delete("view");
-    else next.set("view", view);
+    next.set("view", view);
+    if (typeof document !== "undefined") {
+      const maxAge = VIEW_COOKIE_MAX_AGE_DAYS * 24 * 60 * 60;
+      document.cookie = `${VIEW_COOKIE_NAME}=${view}; path=/; max-age=${maxAge}; SameSite=Lax`;
+    }
     startTransition(() => {
       router.replace(`/prompts${next.toString() ? `?${next}` : ""}`);
     });

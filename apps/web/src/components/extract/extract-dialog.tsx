@@ -107,6 +107,11 @@ export function ExtractDialog({
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>): void {
     e.preventDefault();
+    // Belt-and-braces: even when the dialog is rendered outside any other
+    // form, stopping propagation here means a future caller can render it
+    // anywhere without re-discovering the "submit bubbles up the React tree
+    // through the portal" footgun.
+    e.stopPropagation();
     if (step === "collect") {
       goReview();
       return;
@@ -185,8 +190,9 @@ export function ExtractDialog({
           <DialogDescription>
             {step === "collect" ? (
               <>
-                Creates a new prompt with the selected text and replaces it in this prompt with{" "}
-                <code className="font-mono">{`{{@new-name}}`}</code>.
+                Creates a new prompt with the selected text and replaces it in this prompt with a
+                Langfuse reference tag pinned to <code className="font-mono">label=latest</code> so
+                future edits to the new prompt propagate.
               </>
             ) : (
               <>
@@ -335,7 +341,7 @@ function CollectStep({
           id="extract-commit"
           value={commit}
           onChange={(e) => setCommit(e.target.value)}
-          placeholder={`Extracted shared block to {{@${newName || "new-prompt"}}}`}
+          placeholder={`Extracted shared block to @${newName || "new-prompt"}`}
           disabled={disabled}
         />
       </div>

@@ -35,7 +35,7 @@ interface DoneEvent {
 
 type RunEvent = { type: "token"; content: string } | DoneEvent | { type: "error"; message: string };
 
-export function AIPlay({
+export function Playground({
   promptName,
   version,
   shape,
@@ -305,7 +305,7 @@ function ModelPicker({
   disabled?: boolean;
   onChange: (next: string) => void;
 }) {
-  const id = "aiplay-model";
+  const id = "playground-model";
   const totalCount = groups.reduce((sum, g) => sum + g.models.length, 0);
   return (
     <div className="space-y-1.5">

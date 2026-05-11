@@ -40,6 +40,7 @@ export {
   tagsInNamespace,
 } from "./tags";
 export type {
+  PromptReference,
   PromptToken,
   PromptTokenKind,
   ValidationIssue,
@@ -47,6 +48,9 @@ export type {
 } from "./template";
 export {
   extractVariables,
+  formatReferenceTag,
+  parseReferenceBody,
+  parseReferenceDetails,
   parseReferences,
   parseTemplateTokens,
   renderPrompt,

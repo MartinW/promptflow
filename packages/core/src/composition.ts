@@ -1,16 +1,25 @@
 /**
- * Prompt composition — recursively expand `{{@prompt-name}}` references.
+ * Prompt composition — recursively expand `@@@langfusePrompt:...@@@` references.
  *
  * `template.ts` handles single-template tokenisation; this module sits on top
- * and walks the reference graph, fetching each referenced prompt via the
- * client and substituting it back in. Cycle detection, depth limits, and
- * missing-reference handling are surfaced as data so callers (AIPlay, the
- * canvas, the CLI) can render warnings inline rather than crashing.
+ * and walks the reference graph, fetching each referenced prompt at the
+ * pinned version/label and substituting it back in. Cycle detection, depth
+ * limits, and missing-reference handling are surfaced as data so callers
+ * (Playground, the canvas, the CLI) can render warnings inline rather than
+ * crashing.
+ *
+ * The token format matches Langfuse's native composability feature:
+ *   @@@langfusePrompt:name=X|version=N@@@
+ *   @@@langfusePrompt:name=X|label=Y@@@
  */
 
 import type { PromptFlowClient } from "./client";
-import { renderPrompt } from "./template";
-import { parseReferences } from "./template";
+import {
+  formatReferenceTag,
+  parseReferenceDetails,
+  type PromptReference,
+  renderPrompt,
+} from "./template";
 import type { ChatPrompt, ChatPromptMessage, Prompt, TextPrompt } from "./types";
 import { isChatMessage } from "./types";
 
@@ -22,13 +31,15 @@ export interface ResolveOptions {
   /** Maximum reference depth before truncation. Default 8. */
   maxDepth?: number;
   /**
-   * Label to fetch for each referenced prompt. Defaults to `latest` for
-   * draft-friendly editor previews. Runtime callers should pass `production`.
+   * Default label used when fetching the root prompt and any referenced
+   * prompt that doesn't specify a version or label inline. References in the
+   * body that pin a version/label override this. Defaults to `latest` for
+   * draft-friendly editor previews; runtime callers should pass `production`.
    */
   label?: string;
   /**
    * What to do when a referenced prompt doesn't exist.
-   *   - `leave` (default): record in `missing[]`, leave the `{{@name}}` token literal.
+   *   - `leave` (default): record in `missing[]`, leave the tag literal.
    *   - `throw`: throw immediately on first missing reference.
    */
   onMissing?: "leave" | "throw";
@@ -56,7 +67,7 @@ export interface ResolveResult {
 interface ResolutionState {
   client: PromptFlowClient;
   maxDepth: number;
-  label: string | undefined;
+  defaultLabel: string | undefined;
   onMissing: "leave" | "throw";
   resolvedRefs: string[];
   missing: string[];
@@ -67,23 +78,21 @@ interface ResolutionState {
   truncatedSet: Set<string>;
 }
 
-function escapeForRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&");
-}
-
 /**
- * Replace every `{{@name}}` occurrence (with optional whitespace inside the
- * braces) in `body` with `replacement`. Reference names can contain regex
- * metacharacters (`.`, `/`, `-`), so we escape them first.
+ * Replace every occurrence of a specific reference tag in `body` with
+ * `replacement`. The exact reference tag must match (same name, same
+ * version/label pin) so other references to the same prompt at a different
+ * version stay intact.
  */
-function replaceReference(body: string, name: string, replacement: string): string {
-  const pattern = new RegExp(`\\{\\{\\s*@${escapeForRegExp(name)}\\s*\\}\\}`, "g");
-  return body.replace(pattern, () => replacement);
+function replaceReferenceTag(body: string, ref: PromptReference, replacement: string): string {
+  const literal = formatReferenceTag(ref);
+  return body.split(literal).join(replacement);
 }
 
-function markCycle(body: string, name: string): string {
-  const pattern = new RegExp(`\\{\\{\\s*@${escapeForRegExp(name)}\\s*\\}\\}`, "g");
-  return body.replace(pattern, `{{@${name}:cycle}}`);
+function markCycle(body: string, ref: PromptReference): string {
+  const literal = formatReferenceTag(ref);
+  const marker = `[[cycle:${ref.name}]]`;
+  return body.split(literal).join(marker);
 }
 
 function recordOnce(list: string[], seen: Set<string>, value: string): void {
@@ -104,34 +113,43 @@ async function resolveBody(
   path: string[],
   depth: number,
 ): Promise<string> {
-  const refs = parseReferences(body);
+  const refs = parseReferenceDetails(body);
   if (refs.length === 0) return body;
 
   let result = body;
-  for (const refName of refs) {
-    if (path.includes(refName)) {
-      state.cycles.push([...path, refName]);
-      result = markCycle(result, refName);
+  for (const ref of refs) {
+    if (path.includes(ref.name)) {
+      state.cycles.push([...path, ref.name]);
+      result = markCycle(result, ref);
       continue;
     }
     if (depth >= state.maxDepth) {
-      recordOnce(state.truncated, state.truncatedSet, refName);
+      recordOnce(state.truncated, state.truncatedSet, ref.name);
       continue;
     }
 
+    // Apply the reference's pin if present; otherwise fall back to the
+    // resolver's default label so the editor preview pulls `latest` while
+    // runtime callers can pass `production`. Always fetch unresolved so the
+    // sub-body still contains its own references and recursion can continue.
+    const fetchOpts =
+      ref.version !== undefined
+        ? { version: ref.version, resolve: false }
+        : { label: ref.label ?? state.defaultLabel, resolve: false };
+
     let subPrompt: Prompt;
     try {
-      subPrompt = await state.client.getPrompt(refName, { label: state.label });
+      subPrompt = await state.client.getPrompt(ref.name, fetchOpts);
     } catch (err) {
-      recordOnce(state.missing, state.missingSet, refName);
+      recordOnce(state.missing, state.missingSet, ref.name);
       if (state.onMissing === "throw") throw err;
       continue;
     }
 
     const subBody = flattenPromptBody(subPrompt);
-    const expanded = await resolveBody(subBody, state, [...path, refName], depth + 1);
-    result = replaceReference(result, refName, expanded);
-    recordOnce(state.resolvedRefs, state.resolvedSet, refName);
+    const expanded = await resolveBody(subBody, state, [...path, ref.name], depth + 1);
+    result = replaceReferenceTag(result, ref, expanded);
+    recordOnce(state.resolvedRefs, state.resolvedSet, ref.name);
   }
 
   return result;
@@ -177,20 +195,21 @@ async function resolveChatMessages(
 }
 
 /**
- * Resolve a prompt and all its `{{@name}}` references, returning the fully
- * expanded prompt plus structured diagnostics. Errors during reference
- * resolution surface as data (`missing`, `cycles`, `truncated`) rather than
- * throws, unless `onMissing: "throw"` is set.
+ * Resolve a prompt and all its `@@@langfusePrompt:...@@@` references,
+ * returning the fully expanded prompt plus structured diagnostics. Errors
+ * during reference resolution surface as data (`missing`, `cycles`,
+ * `truncated`) rather than throws, unless `onMissing: "throw"` is set.
  *
  * Resolution order:
- *   1. Fetch the root prompt.
- *   2. Walk references depth-first, fetching each via the client.
+ *   1. Fetch the root prompt (using `opts.label` or the SDK default).
+ *   2. Walk references depth-first; each reference's own version/label pin
+ *      drives the sub-fetch.
  *   3. Substitute resolved bodies back into the parent.
  *   4. Apply `variables` to the fully-expanded result (if provided).
  *
  * Cycle handling: when a reference would re-enter the current path, the token
- * is rewritten to `{{@name:cycle}}` (visible, not expanded) and the cycle is
- * recorded in `result.cycles`. The resolver never hangs.
+ * is replaced by `[[cycle:name]]` and the cycle is recorded in `result.cycles`.
+ * The resolver never hangs.
  */
 export async function resolvePrompt(
   name: string,
@@ -200,7 +219,7 @@ export async function resolvePrompt(
   const state: ResolutionState = {
     client,
     maxDepth: opts.maxDepth ?? DEFAULT_MAX_DEPTH,
-    label: opts.label,
+    defaultLabel: opts.label,
     onMissing: opts.onMissing ?? "leave",
     resolvedRefs: [],
     missing: [],
@@ -211,7 +230,7 @@ export async function resolvePrompt(
     truncatedSet: new Set(),
   };
 
-  const root = await client.getPrompt(name, { label: state.label });
+  const root = await client.getPrompt(name, { label: state.defaultLabel, resolve: false });
 
   let resolved: Prompt;
   if (root.type === "text") {

@@ -72,7 +72,10 @@ export async function getCorpus(): Promise<PromptCorpus> {
   const prompts: CorpusPrompt[] = await Promise.all(
     metas.map(async (meta) => {
       try {
-        const prompt = await client.getPrompt(meta.name);
+        // Fetch unresolved so the corpus body preserves @@@langfusePrompt:...@@@
+        // reference tags — required for the reference graph, duplicate scanner,
+        // and the editor / detail UIs that highlight references.
+        const prompt = await client.getPrompt(meta.name, { resolve: false });
         const body = flattenPromptForAnalysis(prompt);
         return {
           meta,

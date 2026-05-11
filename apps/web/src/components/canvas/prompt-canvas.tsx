@@ -12,6 +12,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import { useMemo } from "react";
+import { FolderGroupNode } from "./folder-group-node";
 import { PromptNode } from "./prompt-node";
 import "@xyflow/react/dist/style.css";
 
@@ -23,7 +24,7 @@ interface PromptCanvasProps {
   showMiniMap?: boolean;
 }
 
-const NODE_TYPES = { prompt: PromptNode };
+const NODE_TYPES = { prompt: PromptNode, folderGroup: FolderGroupNode };
 
 /**
  * React Flow wrapper for the prompt graph. Receives pre-laid-out nodes from

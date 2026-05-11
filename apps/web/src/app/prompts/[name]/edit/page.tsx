@@ -31,7 +31,10 @@ export default async function EditPromptPage({
   let currentVersion = 0;
   let initialTags: string[] = [];
   try {
-    const prompt = await client.getPrompt(name, { version: baseVersion });
+    // resolve: false so the editor receives the raw body with `@@@langfusePrompt`
+    // tags intact. Otherwise Langfuse expands them server-side and the user
+    // would see the resolved text, then accidentally save that as the body.
+    const prompt = await client.getPrompt(name, { version: baseVersion, resolve: false });
     parsed = parsePromptToShape(prompt);
     currentVersion = prompt.version;
     initialTags = prompt.tags;
