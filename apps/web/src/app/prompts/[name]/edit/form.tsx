@@ -99,7 +99,8 @@ export function EditPromptForm({
     [shape.system, shape.userContext, shape.main],
   );
 
-  const hasNeighbours = reverseRefs.length > 0 || Object.keys(corpusByName).length > 0;
+  const hasRefsInBody = composedBody.includes("@@@langfusePrompt:");
+  const hasNeighbours = reverseRefs.length > 0 || Object.keys(corpusByName).length > 0 || hasRefsInBody;
 
   return (
     <>

@@ -10,7 +10,6 @@ import {
   type Node,
 } from "@xyflow/react";
 import { useMemo } from "react";
-import { layoutGraph } from "@/lib/canvas-layout";
 import { PromptNode } from "./prompt-node";
 import "@xyflow/react/dist/style.css";
 
@@ -64,12 +63,31 @@ function Inner({
 }: PerPromptCanvasProps) {
   const { nodes, edges } = useMemo(() => {
     const liveRefs = parseReferences(body);
-    const neighbourNames = new Set<string>([...liveRefs, ...reverseRefs]);
+
+    const NODE_W = 200;
+    const NODE_H = 60;
+    const COL_GAP = 160;
+    const ROW_GAP = 24;
+
+    // Three-column layout: parents (left) → focused (centre) → children (right)
+    const parentNames = reverseRefs.filter((n) => !liveRefs.includes(n));
+    const childNames = liveRefs;
+
+    const centreX = (parentNames.length > 0 ? NODE_W + COL_GAP : 0);
+    const rightX = centreX + NODE_W + COL_GAP;
+
+    function stackY(index: number, total: number, centreY: number): number {
+      const totalHeight = total * NODE_H + (total - 1) * ROW_GAP;
+      return centreY - totalHeight / 2 + index * (NODE_H + ROW_GAP);
+    }
+
+    const maxColumn = Math.max(parentNames.length, childNames.length, 1);
+    const centreY = (maxColumn * (NODE_H + ROW_GAP)) / 2;
 
     const focusNode: Node = {
       id: focusedName,
       type: "prompt",
-      position: { x: 0, y: 0 },
+      position: { x: centreX, y: centreY - NODE_H / 2 },
       data: {
         name: focusedName,
         version: focusedVersion,
@@ -80,12 +98,28 @@ function Inner({
       },
     };
 
-    const neighbourNodes: Node[] = Array.from(neighbourNames).map((name) => {
+    const parentNodes: Node[] = parentNames.map((name, i) => {
       const meta = corpusByName[name];
       return {
         id: name,
         type: "prompt",
-        position: { x: 0, y: 0 },
+        position: { x: 0, y: stackY(i, parentNames.length, centreY) },
+        data: {
+          name,
+          version: meta?.version ?? 0,
+          tags: meta?.tags ?? [],
+          references: meta?.references ?? 0,
+          referencedBy: meta?.referencedBy ?? 0,
+        },
+      };
+    });
+
+    const childNodes: Node[] = childNames.map((name, i) => {
+      const meta = corpusByName[name];
+      return {
+        id: name,
+        type: "prompt",
+        position: { x: rightX, y: stackY(i, childNames.length, centreY) },
         data: {
           name,
           version: meta?.version ?? 0,
@@ -109,7 +143,7 @@ function Inner({
       edgeList.push({ id: `${parent}→${focusedName}`, source: parent, target: focusedName });
     }
 
-    return layoutGraph([focusNode, ...neighbourNodes], edgeList, "LR");
+    return { nodes: [focusNode, ...parentNodes, ...childNodes], edges: edgeList };
   }, [focusedName, focusedVersion, focusedTags, body, reverseRefs, corpusByName]);
 
   const nodeTypes = useMemo(() => NODE_TYPES, []);
