@@ -12,6 +12,8 @@ const GROUP_PADDING = 16;
 const GROUP_HEADER = 32;
 const GROUP_GUTTER = 12;
 const GROUP_COLS = 3;
+const COLUMN_GAP = 120;
+const STACK_GAP = 32;
 
 /**
  * Run dagre auto-layout over a set of nodes/edges and return them with
@@ -61,18 +63,20 @@ export interface PromptNodeInput {
 }
 
 /**
- * Lay out prompt nodes inside folder group containers.
+ * Lay out prompt nodes inside folder group containers, with folders stacked
+ * on the **left** column and unfoldered prompts on the **right** column.
  *
- * Builds React Flow group nodes (one per non-empty folder path) and places
- * each prompt as a child of its folder group with `parentNode` + `extent:
- * "parent"`. Prompts inside a group are arranged in a 3-column grid; folders
- * themselves (plus any unfoldered prompts) are arranged by dagre using
- * aggregated cross-folder references so related folders sit near each other.
+ * Two-column hand-packed layout (no dagre at this level) so the user gets a
+ * predictable spatial split: everything that lives in a folder is on the
+ * left, everything that doesn't is on the right. Edges between prompts
+ * still draw freely across columns — React Flow routes them automatically.
+ *
+ * Within each folder container, prompts use a 3-column grid.
  */
 export function layoutFoldered(
   prompts: PromptNodeInput[],
   edges: Edge[],
-  direction: "LR" | "TB" = "LR",
+  _direction: "LR" | "TB" = "LR",
 ): LaidOutGraph {
   if (prompts.length === 0) return { nodes: [], edges };
 
@@ -84,90 +88,55 @@ export function layoutFoldered(
     else buckets.set(p.folderPath, [p]);
   }
 
-  // Each bucket becomes one container in the outer dagre pass. For folder
-  // buckets the container is a group node sized to fit its grid; for the
-  // null bucket each prompt is its own bare container (no group wrapper).
-  type Container =
-    | { kind: "group"; id: string; folderPath: string; width: number; height: number; prompts: PromptNodeInput[] }
-    | { kind: "bare"; id: string; promptId: string; prompt: PromptNodeInput };
+  interface GroupContainer {
+    kind: "group";
+    id: string;
+    folderPath: string;
+    width: number;
+    height: number;
+    prompts: PromptNodeInput[];
+  }
 
-  const containers: Container[] = [];
-  for (const [folder, list] of buckets) {
-    if (folder === null) {
-      for (const p of list) {
-        containers.push({ kind: "bare", id: p.id, promptId: p.id, prompt: p });
-      }
-      continue;
-    }
+  // Build folder containers, sorted alphabetically for predictable order.
+  const folderEntries = Array.from(buckets.entries())
+    .filter(([folder]) => folder !== null)
+    .sort(([a], [b]) => (a as string).localeCompare(b as string));
+  const folderContainers: GroupContainer[] = folderEntries.map(([folder, list]) => {
     const cols = Math.min(GROUP_COLS, list.length);
     const rows = Math.ceil(list.length / cols);
     const width = cols * NODE_WIDTH + (cols - 1) * GROUP_GUTTER + GROUP_PADDING * 2;
     const height = rows * NODE_HEIGHT + (rows - 1) * GROUP_GUTTER + GROUP_PADDING * 2 + GROUP_HEADER;
-    containers.push({
+    return {
       kind: "group",
       id: `folder:${folder}`,
-      folderPath: folder,
+      folderPath: folder as string,
       width,
       height,
       prompts: list,
-    });
-  }
+    };
+  });
 
-  // Aggregate edges between containers (used purely to bias outer layout).
-  // The actual rendered edges stay prompt → prompt; React Flow routes them
-  // across group boundaries automatically.
-  const containerOf = new Map<string, string>();
-  for (const c of containers) {
-    if (c.kind === "group") for (const p of c.prompts) containerOf.set(p.id, c.id);
-    else containerOf.set(c.promptId, c.id);
-  }
-  const aggregated = new Map<string, { source: string; target: string }>();
-  for (const e of edges) {
-    const s = containerOf.get(e.source);
-    const t = containerOf.get(e.target);
-    if (!s || !t || s === t) continue;
-    aggregated.set(`${s}→${t}`, { source: s, target: t });
-  }
+  // Unfoldered prompts, sorted alphabetically by name for predictable order.
+  const bareList = (buckets.get(null) ?? []).slice().sort((a, b) => a.id.localeCompare(b.id));
 
-  // Outer dagre pass on the containers.
-  const outer = new dagre.graphlib.Graph();
-  outer.setGraph({ rankdir: direction, nodesep: 48, ranksep: 80 });
-  outer.setDefaultEdgeLabel(() => ({}));
-  for (const c of containers) {
-    const w = c.kind === "group" ? c.width : NODE_WIDTH;
-    const h = c.kind === "group" ? c.height : NODE_HEIGHT;
-    outer.setNode(c.id, { width: w, height: h });
-  }
-  for (const e of aggregated.values()) outer.setEdge(e.source, e.target);
-  dagre.layout(outer);
+  // Compute column widths so we know where the right column starts.
+  const leftColumnWidth = folderContainers.reduce((max, c) => Math.max(max, c.width), 0);
+  const rightColumnX = leftColumnWidth > 0 ? leftColumnWidth + COLUMN_GAP : 0;
 
   const outNodes: Node[] = [];
 
-  for (const c of containers) {
-    const pos = outer.node(c.id);
-    if (c.kind === "bare") {
-      outNodes.push({
-        id: c.prompt.id,
-        type: "prompt",
-        position: { x: pos.x - NODE_WIDTH / 2, y: pos.y - NODE_HEIGHT / 2 },
-        data: c.prompt.data,
-      });
-      continue;
-    }
-    const groupX = pos.x - c.width / 2;
-    const groupY = pos.y - c.height / 2;
+  // Left column: folders stacked vertically from y=0 downward.
+  let leftY = 0;
+  for (const c of folderContainers) {
     outNodes.push({
       id: c.id,
       type: "folderGroup",
-      position: { x: groupX, y: groupY },
+      position: { x: 0, y: leftY },
       data: { folderPath: c.folderPath, count: c.prompts.length },
       style: { width: c.width, height: c.height },
-      // Selectable/draggable disabled so the user can't accidentally pull
-      // a group off the canvas while panning.
       selectable: false,
       draggable: false,
     });
-    // Children with positions RELATIVE to the parent group.
     c.prompts.forEach((p, i) => {
       const col = i % GROUP_COLS;
       const row = Math.floor(i / GROUP_COLS);
@@ -183,6 +152,19 @@ export function layoutFoldered(
         extent: "parent",
       });
     });
+    leftY += c.height + STACK_GAP;
+  }
+
+  // Right column: bare prompts stacked vertically from y=0 downward.
+  let rightY = 0;
+  for (const p of bareList) {
+    outNodes.push({
+      id: p.id,
+      type: "prompt",
+      position: { x: rightColumnX, y: rightY },
+      data: p.data,
+    });
+    rightY += NODE_HEIGHT + STACK_GAP;
   }
 
   return { nodes: outNodes, edges };

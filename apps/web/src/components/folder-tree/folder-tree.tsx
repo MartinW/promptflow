@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { MoveConfirmDialog } from "./move-confirm-dialog";
+import { FOLDER_OPEN_COOKIE_MAX_AGE, FOLDER_OPEN_COOKIE_NAME } from "./persistence";
 
 interface FolderTreeProps {
   root: FolderNode;
@@ -28,7 +29,21 @@ interface FolderTreeProps {
   enableDnd?: boolean;
   /** Names with a production label, used for the move-confirm warning. */
   productionNames?: ReadonlySet<string>;
+  /**
+   * Folder paths the user had open during a previous visit, read from a
+   * cookie by the server. Merged with ancestors of the currently selected
+   * prompt so the active path is always reachable.
+   */
+  initialOpenPaths?: ReadonlyArray<string>;
   className?: string;
+}
+
+function persistOpenPaths(paths: Set<string>): void {
+  if (typeof document === "undefined") return;
+  // Prompt names can contain `/`, `:`, `.`, `-`, `_` but not `,` — comma is
+  // safe as a delimiter. URL-encode anyway so cookie parsers don't surprise us.
+  const value = encodeURIComponent(Array.from(paths).join(","));
+  document.cookie = `${FOLDER_OPEN_COOKIE_NAME}=${value}; path=/; max-age=${FOLDER_OPEN_COOKIE_MAX_AGE}; SameSite=Lax`;
 }
 
 interface PendingMove {
@@ -51,11 +66,17 @@ export function FolderTree({
   basePath = "/prompts",
   enableDnd = false,
   productionNames,
+  initialOpenPaths,
   className,
 }: FolderTreeProps) {
-  // Ancestors of the selected prompt always start open so navigation feels
-  // continuous after a click-through from the canvas / detail page.
-  const initiallyOpen = useMemo(() => ancestorsOf(root, selectedName), [root, selectedName]);
+  // Ancestors of the selected prompt are always opened so the active path is
+  // visible, then merged with the user's previously persisted open paths so
+  // the rest of the tree remembers its state across navigations.
+  const initiallyOpen = useMemo(() => {
+    const merged = new Set<string>(initialOpenPaths ?? []);
+    for (const path of ancestorsOf(root, selectedName)) merged.add(path);
+    return merged;
+  }, [root, selectedName, initialOpenPaths]);
   const [openPaths, setOpenPaths] = useState<Set<string>>(initiallyOpen);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
 
@@ -68,6 +89,7 @@ export function FolderTree({
       const next = new Set(prev);
       if (next.has(path)) next.delete(path);
       else next.add(path);
+      persistOpenPaths(next);
       return next;
     });
   }

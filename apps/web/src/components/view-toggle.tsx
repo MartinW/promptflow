@@ -4,6 +4,7 @@ import { LayoutListIcon, NetworkIcon, ScanSearchIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { cn } from "@/lib/utils";
+import { VIEW_COOKIE_MAX_AGE_DAYS, VIEW_COOKIE_NAME } from "./view-cookie";
 
 export type PromptsView = "list" | "canvas" | "duplicates";
 
@@ -17,9 +18,6 @@ const OPTIONS: Array<{ value: PromptsView; label: string; Icon: typeof LayoutLis
   { value: "canvas", label: "Canvas", Icon: NetworkIcon },
   { value: "duplicates", label: "Duplicates", Icon: ScanSearchIcon },
 ];
-
-export const VIEW_COOKIE_NAME = "pf-view";
-const VIEW_COOKIE_MAX_AGE_DAYS = 30;
 
 /**
  * Segmented control that swaps the `?view=` query param on /prompts.

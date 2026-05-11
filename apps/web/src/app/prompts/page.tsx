@@ -4,12 +4,17 @@ import Link from "next/link";
 import { GlobalCanvas } from "@/components/canvas/global-canvas";
 import { DuplicatesResults } from "@/components/duplicates/duplicates-results";
 import { FolderTree } from "@/components/folder-tree/folder-tree";
+import {
+  FOLDER_OPEN_COOKIE_NAME,
+  parseOpenPathsCookie,
+} from "@/components/folder-tree/persistence";
 import { FilterToolbar } from "@/components/prompts/filter-toolbar";
 import { SearchInput } from "@/components/prompts/search-input";
 import { TagBadge } from "@/components/tags/tag-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { VIEW_COOKIE_NAME, ViewToggle, type PromptsView } from "@/components/view-toggle";
+import { VIEW_COOKIE_NAME } from "@/components/view-cookie";
+import { ViewToggle, type PromptsView } from "@/components/view-toggle";
 import { getCorpus, type CorpusPrompt } from "@/lib/corpus";
 import { isLangfuseConfigured } from "@/lib/server-client";
 
@@ -39,9 +44,14 @@ export default async function PromptsPage({
   // URL param wins; otherwise fall back to the `pf-view` cookie set by the
   // ViewToggle so the user's last choice persists across navigation back to
   // /prompts. List is the final default.
-  const cookieView = (await cookies()).get(VIEW_COOKIE_NAME)?.value;
+  const cookieStore = await cookies();
+  const cookieView = cookieStore.get(VIEW_COOKIE_NAME)?.value;
   const view: PromptsView = parseView(params.view ?? cookieView);
   const folderPath = params.folder?.trim() ?? "";
+  // Last-known FolderTree expansion state (set by the tree itself on each
+  // toggle). Merged with the active prompt's ancestors inside the tree so the
+  // current selection is always reachable.
+  const initialOpenPaths = parseOpenPathsCookie(cookieStore.get(FOLDER_OPEN_COOKIE_NAME)?.value);
 
   let prompts: CorpusPrompt[];
   let folderTree;
@@ -98,6 +108,7 @@ export default async function PromptsPage({
             selectedPath={folderPath || undefined}
             enableDnd
             productionNames={productionNames}
+            initialOpenPaths={initialOpenPaths}
             className="max-h-[70vh] overflow-y-auto rounded-md border p-2"
           />
         </aside>
