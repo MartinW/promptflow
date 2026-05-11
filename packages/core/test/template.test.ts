@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { extractVariables, renderPrompt, validatePromptTemplate } from "../src/template";
+import {
+  extractVariables,
+  parseReferences,
+  parseTemplateTokens,
+  renderPrompt,
+  validatePromptTemplate,
+} from "../src/template";
 
 describe("validatePromptTemplate", () => {
   it("returns valid for a template with no variables", () => {
@@ -87,5 +93,86 @@ describe("renderPrompt", () => {
 describe("extractVariables", () => {
   it("returns deduplicated, ordered variable names", () => {
     expect(extractVariables("{{a}} {{b}} {{a}} {{c}}")).toEqual(["a", "b", "c"]);
+  });
+
+  it("does not include references", () => {
+    expect(extractVariables("{{a}} {{@some/prompt}} {{b}}")).toEqual(["a", "b"]);
+  });
+});
+
+describe("references in validatePromptTemplate", () => {
+  it("recognises {{@name}} as a reference, not a variable", () => {
+    const result = validatePromptTemplate("Hello {{name}}, see also {{@shared/intro}}.");
+    expect(result.valid).toBe(true);
+    expect(result.variables).toEqual(["name"]);
+    expect(result.references).toEqual(["shared/intro"]);
+  });
+
+  it("tolerates whitespace around reference braces", () => {
+    const result = validatePromptTemplate("{{ @greetings:hello }}");
+    expect(result.valid).toBe(true);
+    expect(result.references).toEqual(["greetings:hello"]);
+  });
+
+  it("dedupes references in first-seen order", () => {
+    const result = validatePromptTemplate("{{@a}} {{@b}} {{@a}} {{@c}}");
+    expect(result.references).toEqual(["a", "b", "c"]);
+  });
+
+  it("flags an invalid reference name", () => {
+    const result = validatePromptTemplate("Hi {{@bad name}}");
+    expect(result.valid).toBe(false);
+    expect(result.issues[0].kind).toBe("invalid_reference_name");
+  });
+
+  it("flags an empty reference (`{{@}}`)", () => {
+    const result = validatePromptTemplate("Hi {{@}}");
+    expect(result.valid).toBe(false);
+    expect(result.issues[0].kind).toBe("invalid_reference_name");
+  });
+
+  it("accepts the full prompt-name alphabet (letters, digits, . _ - : /)", () => {
+    const result = validatePromptTemplate("{{@agents/chat.v2:greeting_v1-prod}}");
+    expect(result.valid).toBe(true);
+    expect(result.references).toEqual(["agents/chat.v2:greeting_v1-prod"]);
+  });
+
+  it("returns tokens with positions for variables and references", () => {
+    const template = "x {{a}} y {{@b/c}} z";
+    const result = validatePromptTemplate(template);
+    expect(result.tokens).toEqual([
+      { kind: "variable", name: "a", start: 2, end: 7 },
+      { kind: "reference", name: "b/c", start: 10, end: 18 },
+    ]);
+  });
+});
+
+describe("renderPrompt leaves references alone", () => {
+  it("substitutes variables but not references", () => {
+    expect(
+      renderPrompt("Hi {{name}}, see {{@intro}}.", { name: "Ada", intro: "ignored" }),
+    ).toBe("Hi Ada, see {{@intro}}.");
+  });
+});
+
+describe("parseTemplateTokens", () => {
+  it("returns variables, references, and positional tokens", () => {
+    const result = parseTemplateTokens("{{a}} {{@b}} {{a}}");
+    expect(result.variables).toEqual(["a"]);
+    expect(result.references).toEqual(["b"]);
+    expect(result.tokens).toHaveLength(3);
+    expect(result.tokens[0]).toMatchObject({ kind: "variable", name: "a" });
+    expect(result.tokens[1]).toMatchObject({ kind: "reference", name: "b" });
+    expect(result.tokens[2]).toMatchObject({ kind: "variable", name: "a" });
+  });
+});
+
+describe("parseReferences", () => {
+  it("returns deduplicated, ordered references", () => {
+    expect(parseReferences("{{@a}} {{@b}} {{@a}} {{@c}}")).toEqual(["a", "b", "c"]);
+  });
+
+  it("returns empty array for templates with no references", () => {
+    expect(parseReferences("{{name}} plain text")).toEqual([]);
   });
 });

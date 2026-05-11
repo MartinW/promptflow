@@ -1,16 +1,25 @@
-import { PromptFlowError, type PromptMeta } from "@promptflow/core";
+import { findDuplicates, matchesTags, PromptFlowError } from "@promptflow/core";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { GlobalCanvas } from "@/components/canvas/global-canvas";
+import { DuplicatesResults } from "@/components/duplicates/duplicates-results";
+import { FolderTree } from "@/components/folder-tree/folder-tree";
+import { FilterToolbar } from "@/components/prompts/filter-toolbar";
+import { TagBadge } from "@/components/tags/tag-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
+import { ViewToggle, type PromptsView } from "@/components/view-toggle";
+import { getCorpus, type CorpusPrompt } from "@/lib/corpus";
+import { isLangfuseConfigured } from "@/lib/server-client";
 
 export const dynamic = "force-dynamic";
 
 interface SearchParams {
   q?: string;
   tag?: string;
+  mode?: string;
+  view?: string;
+  folder?: string;
 }
 
 export default async function PromptsPage({
@@ -24,15 +33,27 @@ export default async function PromptsPage({
 
   const params = await searchParams;
   const query = params.q?.trim().toLowerCase();
-  const tag = params.tag?.trim();
+  const selectedTags = parseTagsParam(params.tag);
+  const mode: "and" | "or" = params.mode === "or" ? "or" : "and";
+  const view: PromptsView = parseView(params.view);
+  const folderPath = params.folder?.trim() ?? "";
 
-  let prompts: PromptMeta[];
+  let prompts: CorpusPrompt[];
+  let folderTree;
+  let productionNames: Set<string> = new Set();
   let error: string | null = null;
   try {
-    const client = getServerClient();
-    prompts = await client.listPrompts({ tag, limit: 100 });
+    const corpus = await getCorpus();
+    prompts = corpus.prompts;
+    folderTree = corpus.folderTree;
+    productionNames = new Set(
+      corpus.prompts
+        .filter((p) => p.meta.labels.includes("production"))
+        .map((p) => p.meta.name),
+    );
   } catch (err) {
     prompts = [];
+    folderTree = { path: "", name: "", children: new Map(), prompts: [] };
     error =
       err instanceof PromptFlowError
         ? `[${err.kind}] ${err.message}`
@@ -41,91 +62,122 @@ export default async function PromptsPage({
           : String(err);
   }
 
-  const filtered = query ? prompts.filter((p) => p.name.toLowerCase().includes(query)) : prompts;
-  const allTags = collectTags(prompts);
+  const filtered = prompts.filter((p) => {
+    if (query && !p.meta.name.toLowerCase().includes(query)) return false;
+    if (!matchesTags(p.meta.tags, selectedTags, mode)) return false;
+    if (folderPath && !p.meta.name.startsWith(`${folderPath}/`)) return false;
+    return true;
+  });
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
-      <header className="flex items-end justify-between mb-6">
+    <main className="mx-auto max-w-7xl px-6 py-8">
+      <header className="flex items-end justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Prompts</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {prompts.length} {prompts.length === 1 ? "prompt" : "prompts"} in this Langfuse project.
           </p>
         </div>
-        <Link href="/prompts/new" className={buttonVariants()}>
-          + New prompt
-        </Link>
+        <div className="flex items-center gap-3">
+          <ViewToggle current={view} />
+          <Link href="/prompts/new" className={buttonVariants()}>
+            + New prompt
+          </Link>
+        </div>
       </header>
 
-      <form className="flex flex-wrap items-center gap-3 mb-6">
-        <Input
-          name="q"
-          placeholder="Search by name..."
-          defaultValue={query ?? ""}
-          className="max-w-xs"
-        />
-        {tag && (
-          <Badge variant="secondary" className="gap-2">
-            tag: {tag}
-            <Link href={buildHref({ q: query })} className="hover:opacity-70">
-              ✕
-            </Link>
-          </Badge>
-        )}
-      </form>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[14rem_minmax(0,1fr)_18rem]">
+        <aside className="md:sticky md:top-4 md:self-start">
+          <FolderTree
+            root={folderTree}
+            selectedPath={folderPath || undefined}
+            enableDnd
+            productionNames={productionNames}
+            className="max-h-[70vh] overflow-y-auto rounded-md border p-2"
+          />
+        </aside>
 
-      {allTags.length > 0 && !tag && (
-        <section className="mb-6">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            Filter by tag
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {allTags.map((t) => (
-              <Link key={t} href={buildHref({ q: query, tag: t })}>
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
-                  {t}
-                </Badge>
-              </Link>
-            ))}
-          </div>
+        <section className="min-w-0">
+          <form className="flex flex-wrap items-center gap-3 mb-4">
+            <Input
+              name="q"
+              placeholder="Search by name..."
+              defaultValue={query ?? ""}
+              className="max-w-xs"
+            />
+            {folderPath ? (
+              <span className="text-xs text-muted-foreground">
+                in <span className="font-mono">{folderPath}/</span>
+                <Link href={removeParam(params, "folder")} className="ml-2 underline">
+                  clear
+                </Link>
+              </span>
+            ) : null}
+          </form>
+
+          {error ? <ErrorBanner message={error} /> : null}
+
+          {view === "list" ? (
+            <PromptsList filtered={filtered} hasFilter={hasAnyFilter(query, selectedTags, folderPath)} />
+          ) : view === "canvas" ? (
+            <GlobalCanvas prompts={filtered} />
+          ) : (
+            <DuplicatesResults
+              groups={findDuplicates(
+                prompts.map((p) => ({ name: p.meta.name, body: p.body })),
+              )}
+            />
+          )}
         </section>
-      )}
 
-      {error ? <ErrorBanner message={error} /> : null}
-
-      {filtered.length === 0 ? (
-        <EmptyState hasFilter={Boolean(query || tag)} />
-      ) : (
-        <ul className="space-y-2">
-          {filtered.map((prompt) => (
-            <li key={prompt.name}>
-              <Link href={`/prompts/${encodeURIComponent(prompt.name)}`}>
-                <Card className="px-5 py-4 hover:border-foreground/20 transition-colors">
-                  <div className="flex items-baseline justify-between gap-4">
-                    <div className="min-w-0">
-                      <h3 className="font-medium truncate">{prompt.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {prompt.versions.length}{" "}
-                        {prompt.versions.length === 1 ? "version" : "versions"} · updated{" "}
-                        {formatRelative(prompt.lastUpdatedAt)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-1 justify-end">
-                      {prompt.tags.slice(0, 6).map((t) => (
-                        <Badge key={t} variant="secondary" className="text-xs">
-                          {t}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+        <aside className="md:sticky md:top-4 md:self-start">
+          <Card className="p-3">
+            <FilterToolbar tags={selectedTags} mode={mode} />
+          </Card>
+        </aside>
+      </div>
     </main>
+  );
+}
+
+interface PromptsListProps {
+  filtered: CorpusPrompt[];
+  hasFilter: boolean;
+}
+
+function PromptsList({ filtered, hasFilter }: PromptsListProps) {
+  if (filtered.length === 0) {
+    return <EmptyState hasFilter={hasFilter} />;
+  }
+  return (
+    <ul className="space-y-2">
+      {filtered.map((entry) => (
+        <li key={entry.meta.name}>
+          <Link href={`/prompts/${encodeURIComponent(entry.meta.name)}`}>
+            <Card className="px-5 py-4 hover:border-foreground/20 transition-colors">
+              <div className="flex items-baseline justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="font-medium truncate">{entry.meta.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {entry.meta.versions.length}{" "}
+                    {entry.meta.versions.length === 1 ? "version" : "versions"} · updated{" "}
+                    {formatRelative(entry.meta.lastUpdatedAt)}
+                    {entry.references.length > 0
+                      ? ` · refs ${entry.references.length}`
+                      : ""}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {entry.meta.tags.slice(0, 6).map((tag) => (
+                    <TagBadge key={tag} tag={tag} />
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -174,7 +226,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
   if (hasFilter) {
     return (
       <Card className="p-10 text-center text-sm text-muted-foreground">
-        No prompts match this filter.
+        No prompts match these filters.
       </Card>
     );
   }
@@ -191,20 +243,30 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
   );
 }
 
-function collectTags(prompts: PromptMeta[]): string[] {
-  const set = new Set<string>();
-  for (const p of prompts) {
-    for (const t of p.tags) set.add(t);
-  }
-  return [...set].sort();
+function parseTagsParam(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
 }
 
-function buildHref(params: { q?: string; tag?: string }): string {
-  const search = new URLSearchParams();
-  if (params.q) search.set("q", params.q);
-  if (params.tag) search.set("tag", params.tag);
-  const query = search.toString();
-  return query ? `/prompts?${query}` : "/prompts";
+function parseView(raw: string | undefined): PromptsView {
+  if (raw === "canvas" || raw === "duplicates") return raw;
+  return "list";
+}
+
+function hasAnyFilter(query: string | undefined, tags: string[], folder: string): boolean {
+  return Boolean(query) || tags.length > 0 || folder.length > 0;
+}
+
+function removeParam(params: SearchParams, key: keyof SearchParams): string {
+  const next = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (k === key || !v) continue;
+    next.set(k, String(v));
+  }
+  return next.toString() ? `/prompts?${next}` : "/prompts";
 }
 
 function formatRelative(iso: string): string {

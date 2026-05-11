@@ -125,3 +125,82 @@ export function matchesFilter(promptTags: string[], filter: string): boolean {
   const tagSet = new Set(promptTags);
   return filterTags.every((t) => tagSet.has(t));
 }
+
+/**
+ * Match prompt tags against a multi-tag filter with AND or OR semantics.
+ *
+ * Equivalent to `matchesFilter` when `mode: "and"` (the default). Used by
+ * the new TagFilterBar to support an OR mode where any matching tag passes.
+ */
+export function matchesTags(
+  promptTags: string[],
+  tags: string[],
+  mode: "and" | "or" = "and",
+): boolean {
+  if (tags.length === 0) return true;
+  const tagSet = new Set(promptTags);
+  return mode === "and" ? tags.every((t) => tagSet.has(t)) : tags.some((t) => tagSet.has(t));
+}
+
+/**
+ * Pre-baked colour palette for tag namespaces. Keys are deterministic so
+ * known namespaces always render the same colour across surfaces (web, CLI,
+ * mobile). Tags without a known namespace fall through to a hashed slot.
+ */
+const NAMESPACE_PALETTE: Record<string, NamespaceColor> = {
+  voice: { hue: 192, name: "sky" },
+  image: { hue: 280, name: "violet" },
+  eval: { hue: 340, name: "rose" },
+  app: { hue: 145, name: "emerald" },
+  lang: { hue: 35, name: "amber" },
+  env: { hue: 220, name: "indigo" },
+};
+
+const FALLBACK_HUES = [10, 50, 90, 130, 170, 210, 250, 290, 330];
+
+export interface NamespaceColor {
+  /** HSL hue 0-360 used to derive a colour at the consumer (badge, canvas). */
+  hue: number;
+  /** Named palette slot — useful for picking corresponding Tailwind classes. */
+  name:
+    | "sky"
+    | "violet"
+    | "rose"
+    | "emerald"
+    | "amber"
+    | "indigo"
+    | "slate"
+    | "lime"
+    | "cyan"
+    | "fuchsia"
+    | "orange"
+    | "teal";
+}
+
+const FALLBACK_NAMES: NamespaceColor["name"][] = [
+  "slate",
+  "lime",
+  "cyan",
+  "fuchsia",
+  "orange",
+  "teal",
+];
+
+/**
+ * Stable colour for a tag namespace. Known namespaces map to a fixed slot;
+ * unknown prefixes (or unprefixed tags) hash deterministically into a
+ * fallback palette so the same tag always renders the same colour.
+ */
+export function namespaceColor(namespaceOrTag: string): NamespaceColor {
+  const parsed = parseTag(namespaceOrTag);
+  const key = parsed.namespace ?? namespaceOrTag;
+  const known = NAMESPACE_PALETTE[key];
+  if (known) return known;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  const hue = FALLBACK_HUES[hash % FALLBACK_HUES.length];
+  const name = FALLBACK_NAMES[hash % FALLBACK_NAMES.length];
+  return { hue, name };
+}

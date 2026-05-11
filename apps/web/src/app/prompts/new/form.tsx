@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { PromptComposeEditor } from "@/components/prompt-compose-editor";
+import { TagPicker } from "@/components/tags/tag-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ const EMPTY_SHAPE: ComposeShape = { system: "", userContext: "", main: "" };
 export function NewPromptForm() {
   const [name, setName] = useState("");
   const [shape, setShape] = useState<ComposeShape>(EMPTY_SHAPE);
-  const [tags, setTags] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [promote, setPromote] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -30,7 +31,7 @@ export function NewPromptForm() {
     fd.set("system", shape.system);
     fd.set("userContext", shape.userContext);
     fd.set("main", shape.main);
-    fd.set("tags", tags);
+    fd.set("tags", tags.join(","));
     if (promote) fd.set("promote", "on");
 
     startTransition(async () => {
@@ -73,15 +74,9 @@ export function NewPromptForm() {
 
         <Field
           label="Tags"
-          hint="Comma-separated. Convention: voice, image, eval, app:<name>:<feature>, lang:en-GB, env:prod"
+          hint="Convention: voice, image, eval, app:<name>:<feature>, lang:en-GB, env:prod"
         >
-          <Input
-            name="tags"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="voice, env:prod"
-            disabled={pending}
-          />
+          <TagPicker value={tags} onChange={setTags} disabled={pending} />
         </Field>
 
         <label className="flex items-start gap-3 pt-1 cursor-pointer">

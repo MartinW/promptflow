@@ -68,7 +68,11 @@ export function CommandPalette() {
         <CommandEmpty>{loading ? "Loading..." : "No matches."}</CommandEmpty>
 
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => go("/prompts")}>All prompts</CommandItem>
+          <CommandItem onSelect={() => go("/prompts")}>All prompts (list)</CommandItem>
+          <CommandItem onSelect={() => go("/prompts?view=canvas")}>Open canvas</CommandItem>
+          <CommandItem onSelect={() => go("/prompts?view=duplicates")}>
+            Find duplicates
+          </CommandItem>
           <CommandItem onSelect={() => go("/prompts/new")}>New prompt…</CommandItem>
         </CommandGroup>
 

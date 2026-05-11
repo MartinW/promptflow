@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { ScissorsIcon } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { PromptComposeEditor } from "@/components/prompt-compose-editor";
+import {
+  PerPromptCanvas,
+  type NeighbourPrompt,
+} from "@/components/canvas/per-prompt-canvas";
+import { ExtractDialog } from "@/components/extract/extract-dialog";
+import {
+  PromptComposeEditor,
+  type ComposeSelection,
+} from "@/components/prompt-compose-editor";
+import { TagPicker } from "@/components/tags/tag-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,11 +24,29 @@ interface Props {
   initialShape: ComposeShape;
   initialTags: string;
   baseVersion: number;
+  reverseRefs?: string[];
+  corpusByName?: Record<string, NeighbourPrompt>;
 }
 
-export function EditPromptForm({ name, initialShape, initialTags, baseVersion }: Props) {
+function parseInitialTags(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+export function EditPromptForm({
+  name,
+  initialShape,
+  initialTags,
+  baseVersion,
+  reverseRefs = [],
+  corpusByName = {},
+}: Props) {
   const [shape, setShape] = useState<ComposeShape>(initialShape);
-  const [tags, setTags] = useState(initialTags);
+  const [tags, setTags] = useState<string[]>(() => parseInitialTags(initialTags));
+  const [selection, setSelection] = useState<ComposeSelection | null>(null);
+  const [extractOpen, setExtractOpen] = useState(false);
   const [commit, setCommit] = useState("");
   const [promote, setPromote] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +63,7 @@ export function EditPromptForm({ name, initialShape, initialTags, baseVersion }:
     fd.set("system", shape.system);
     fd.set("userContext", shape.userContext);
     fd.set("main", shape.main);
-    fd.set("tags", tags);
+    fd.set("tags", tags.join(","));
     fd.set("commitMessage", commit);
     if (promote) fd.set("promote", "on");
 
@@ -61,10 +89,38 @@ export function EditPromptForm({ name, initialShape, initialTags, baseVersion }:
     shape.system !== initialShape.system ||
     shape.userContext !== initialShape.userContext ||
     shape.main !== initialShape.main ||
-    tags !== initialTags;
+    tags.join(",") !== parseInitialTags(initialTags).join(",");
+
+  // Concat the compose fields into a single text the reference parser can
+  // walk. Order is irrelevant for reference detection — we only care which
+  // prompt names appear anywhere in the draft.
+  const composedBody = useMemo(
+    () => [shape.system, shape.userContext, shape.main].filter(Boolean).join("\n\n"),
+    [shape.system, shape.userContext, shape.main],
+  );
+
+  const hasNeighbours = reverseRefs.length > 0 || Object.keys(corpusByName).length > 0;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {hasNeighbours ? (
+        <Card className="p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Composition graph</span>
+            <span className="text-xs text-muted-foreground">
+              live · edges update as you type {"{{@references}}"}
+            </span>
+          </div>
+          <PerPromptCanvas
+            focusedName={name}
+            focusedVersion={baseVersion}
+            focusedTags={tags}
+            body={composedBody}
+            reverseRefs={reverseRefs}
+            corpusByName={corpusByName}
+          />
+        </Card>
+      ) : null}
       <Card className="p-5 space-y-5">
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
@@ -79,7 +135,26 @@ export function EditPromptForm({ name, initialShape, initialTags, baseVersion }:
             onChange={setShape}
             disabled={pending}
             forceShowFilled
+            onSelectionChange={setSelection}
           />
+          {selection ? (
+            <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2 text-xs">
+              <span className="text-muted-foreground">
+                Selected {selection.text.length} chars in{" "}
+                <span className="font-mono">{selection.field}</span>
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setExtractOpen(true)}
+                disabled={pending}
+              >
+                <ScissorsIcon className="size-3" /> Extract to prompt
+              </Button>
+            </div>
+          ) : null}
           {fieldErrors.body ? (
             <p className="text-xs text-red-600 dark:text-red-400">{fieldErrors.body}</p>
           ) : null}
@@ -88,17 +163,9 @@ export function EditPromptForm({ name, initialShape, initialTags, baseVersion }:
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-sm font-medium">Tags</span>
-            <span className="text-xs text-muted-foreground">
-              comma-separated; applies to all versions
-            </span>
+            <span className="text-xs text-muted-foreground">applies to all versions</span>
           </div>
-          <Input
-            name="tags"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            disabled={pending}
-            placeholder="voice, env:prod"
-          />
+          <TagPicker value={tags} onChange={setTags} disabled={pending} />
         </div>
 
         <div className="space-y-2">
@@ -147,6 +214,23 @@ export function EditPromptForm({ name, initialShape, initialTags, baseVersion }:
           {pending ? "Saving..." : `Save as v${baseVersion + 1}`}
         </Button>
       </div>
+      {selection ? (
+        <ExtractDialog
+          open={extractOpen}
+          onOpenChange={setExtractOpen}
+          sourceName={name}
+          sourceShape={shape}
+          sourceTags={tags}
+          field={selection.field}
+          selectionStart={selection.start}
+          selectionEnd={selection.end}
+          selectedText={selection.text}
+          onExtracted={(rewrittenShape) => {
+            setShape(rewrittenShape);
+            setSelection(null);
+          }}
+        />
+      ) : null}
     </form>
   );
 }

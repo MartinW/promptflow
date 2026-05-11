@@ -6,18 +6,35 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { aggregateVariables, type ComposeShape } from "@/lib/prompt-shape";
 
+export type ComposeField = "system" | "userContext" | "main";
+
+export interface ComposeSelection {
+  field: ComposeField;
+  start: number;
+  end: number;
+  text: string;
+}
+
 interface Props {
   value: ComposeShape;
   onChange: (next: ComposeShape) => void;
   disabled?: boolean;
   /** When true (edit mode), force any field that already has content to be visible. */
   forceShowFilled?: boolean;
+  /** Fired when the user makes (or clears) a non-empty selection in one of the textareas. */
+  onSelectionChange?: (selection: ComposeSelection | null) => void;
 }
 
 const STORAGE_KEY_SYSTEM = "promptflow.compose.showSystem";
 const STORAGE_KEY_CONTEXT = "promptflow.compose.showUserContext";
 
-export function PromptComposeEditor({ value, onChange, disabled, forceShowFilled }: Props) {
+export function PromptComposeEditor({
+  value,
+  onChange,
+  disabled,
+  forceShowFilled,
+  onSelectionChange,
+}: Props) {
   const [showSystem, setShowSystem] = useState<boolean>(false);
   const [showUserContext, setShowUserContext] = useState<boolean>(false);
 
@@ -97,6 +114,9 @@ export function PromptComposeEditor({ value, onChange, disabled, forceShowFilled
           placeholder="You are a helpful assistant."
           value={value.system}
           onChange={(next) => onChange({ ...value, system: next })}
+          onSelect={(start, end, text) =>
+            onSelectionChange?.(text ? { field: "system", start, end, text } : null)
+          }
           disabled={disabled}
           rows={6}
         />
@@ -109,6 +129,9 @@ export function PromptComposeEditor({ value, onChange, disabled, forceShowFilled
           placeholder="Today's date: 2026-04-27. User tier: pro."
           value={value.userContext}
           onChange={(next) => onChange({ ...value, userContext: next })}
+          onSelect={(start, end, text) =>
+            onSelectionChange?.(text ? { field: "userContext", start, end, text } : null)
+          }
           disabled={disabled}
           rows={4}
         />
@@ -120,6 +143,9 @@ export function PromptComposeEditor({ value, onChange, disabled, forceShowFilled
         placeholder="Help the user with: {{query}}"
         value={value.main}
         onChange={(next) => onChange({ ...value, main: next })}
+        onSelect={(start, end, text) =>
+          onSelectionChange?.(text ? { field: "main", start, end, text } : null)
+        }
         disabled={disabled}
         rows={10}
       />
@@ -163,6 +189,7 @@ function ComposeField({
   placeholder,
   value,
   onChange,
+  onSelect,
   disabled,
   rows = 8,
 }: {
@@ -171,6 +198,7 @@ function ComposeField({
   placeholder?: string;
   value: string;
   onChange: (next: string) => void;
+  onSelect?: (start: number, end: number, text: string) => void;
   disabled?: boolean;
   rows?: number;
 }) {
@@ -187,6 +215,15 @@ function ComposeField({
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onSelect={(e) => {
+          const target = e.target as HTMLTextAreaElement;
+          const start = target.selectionStart;
+          const end = target.selectionEnd;
+          if (onSelect) {
+            const text = start !== end ? target.value.slice(start, end) : "";
+            onSelect(start, end, text);
+          }
+        }}
         rows={rows}
         placeholder={placeholder}
         disabled={disabled}
