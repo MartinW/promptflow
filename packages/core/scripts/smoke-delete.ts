@@ -6,7 +6,7 @@
  * against a prompt with known trace history.
  *
  * Run: bun run packages/core/scripts/smoke-delete.ts
- * Reads LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY / LANGFUSE_BASE_URL
+ * Reads LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY / LANGFUSE_HOST
  * from process.env.
  */
 
@@ -14,7 +14,7 @@ import { createClient, PromptFlowError } from "../src/index";
 
 const publicKey = process.env.LANGFUSE_PUBLIC_KEY;
 const secretKey = process.env.LANGFUSE_SECRET_KEY;
-const host = process.env.LANGFUSE_BASE_URL;
+const host = process.env.LANGFUSE_HOST;
 
 if (!publicKey || !secretKey) {
   console.error("Missing LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY");

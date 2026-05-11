@@ -20,6 +20,10 @@
     "openrouter"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "bin": {
     "promptflow": "./dist/index.js"
   },
@@ -30,7 +34,9 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "tsup"
   },
   "dependencies": {
     "@promptflow/core": "workspace:*",
@@ -43,7 +49,8 @@
     "@types/node": "^20",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.5"
   },
   "engines": {
     "node": ">=20.0.0"

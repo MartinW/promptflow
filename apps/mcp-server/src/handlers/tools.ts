@@ -4,17 +4,35 @@ import {
   type CallToolResult,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { extractVariables, isPlaceholder, renderPrompt } from "@promptflow/core";
+import { extractVariables, isPlaceholder, matchesFilter, renderPrompt } from "@promptflow/core";
 import Fuse from "fuse.js";
 import type { PromptCache } from "../cache";
 import type { ServerConfig } from "../config";
 import type { Logger } from "../logger";
 
-interface ToolDef {
+export interface ToolDef {
   name: string;
   description: string;
   inputSchema: object;
   handler: (args: Record<string, unknown>) => Promise<CallToolResult>;
+}
+
+/**
+ * Build the tool list this server exposes. Exported so tests can assert
+ * registration without spinning up the MCP transport.
+ */
+export function buildTools(cache: PromptCache, config: ServerConfig): ToolDef[] {
+  const tools: ToolDef[] = [
+    listPromptsTool(cache),
+    searchPromptsTool(cache),
+    getPromptMetadataTool(cache),
+    renderPromptTool(cache),
+    refreshPromptsTool(cache),
+  ];
+  if (config.openrouterApiKey) {
+    tools.push(runPromptTool(cache, config.openrouterApiKey));
+  }
+  return tools;
 }
 
 /**
@@ -31,16 +49,7 @@ export function registerToolHandlers(
   config: ServerConfig,
   logger: Logger,
 ): void {
-  const tools: ToolDef[] = [
-    listPromptsTool(cache),
-    searchPromptsTool(cache),
-    getPromptMetadataTool(cache),
-    renderPromptTool(cache),
-    refreshPromptsTool(cache),
-  ];
-  if (config.openrouterApiKey) {
-    tools.push(runPromptTool(cache, config.openrouterApiKey));
-  }
+  const tools = buildTools(cache, config);
   const byName = new Map(tools.map((t) => [t.name, t]));
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -84,15 +93,7 @@ function listPromptsTool(cache: PromptCache): ToolDef {
       const all = await cache.list();
       const filter = typeof args.tag_filter === "string" ? args.tag_filter : undefined;
       const limit = typeof args.limit === "number" ? args.limit : 50;
-      const filtered = filter
-        ? all.filter((p) =>
-            filter
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean)
-              .every((t) => p.tags.includes(t)),
-          )
-        : all;
+      const filtered = filter ? all.filter((p) => matchesFilter(p.tags, filter)) : all;
       const data = filtered.slice(0, limit).map((p) => ({
         name: p.name,
         versions: p.versions,

@@ -78,7 +78,7 @@ export default async function PromptDetailPage({
               }`}
               className={buttonVariants()}
             >
-              ▶ AIPlay
+              ▶ Playground
             </Link>
             <Link
               href={`/prompts/${encodedName}/edit${

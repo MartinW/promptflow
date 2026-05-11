@@ -7,7 +7,7 @@ import { createClient } from "../src/index";
 
 const publicKey = process.env.LANGFUSE_PUBLIC_KEY!;
 const secretKey = process.env.LANGFUSE_SECRET_KEY!;
-const host = process.env.LANGFUSE_BASE_URL;
+const host = process.env.LANGFUSE_HOST;
 const client = createClient({ publicKey, secretKey, host });
 
 const name = `smoke/folder-delete-${Date.now()}`;

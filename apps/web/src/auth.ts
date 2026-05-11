@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthResult } from "next-auth";
 import Google from "next-auth/providers/google";
 
 const parseList = (s: string | undefined) =>
@@ -19,12 +19,37 @@ function isAllowed(email: string | null | undefined): boolean {
   return domain ? allowedDomains.includes(domain) : false;
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [Google],
-  pages: { signIn: "/sign-in" },
-  callbacks: {
-    signIn({ user }) {
-      return isAllowed(user.email);
-    },
-  },
-});
+export const authEnabled = !!(
+  process.env.AUTH_SECRET &&
+  process.env.AUTH_GOOGLE_ID &&
+  process.env.AUTH_GOOGLE_SECRET
+);
+
+const real = authEnabled
+  ? NextAuth({
+      providers: [Google],
+      pages: { signIn: "/sign-in" },
+      callbacks: {
+        signIn({ user }) {
+          return isAllowed(user.email);
+        },
+      },
+    })
+  : null;
+
+const notFound = async () => new Response("Not found", { status: 404 });
+
+export const handlers: NextAuthResult["handlers"] = real?.handlers ?? {
+  GET: notFound,
+  POST: notFound,
+};
+export const auth: NextAuthResult["auth"] = (real?.auth ??
+  (async () => null)) as NextAuthResult["auth"];
+export const signIn: NextAuthResult["signIn"] = (real?.signIn ??
+  (async () => {
+    throw new Error("Auth is not configured on this deployment.");
+  })) as NextAuthResult["signIn"];
+export const signOut: NextAuthResult["signOut"] = (real?.signOut ??
+  (async () => {
+    throw new Error("Auth is not configured on this deployment.");
+  })) as NextAuthResult["signOut"];
