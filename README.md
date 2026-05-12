@@ -2,11 +2,11 @@
 
 A better UI for [Langfuse](https://langfuse.com) prompt management. Open core.
 
-PromptFlow is a frontend for the prompt-management half of Langfuse, with the UX bent toward authoring and iteration: tag-first organisation, a Cmd-K palette, inline diffs, an integrated playground, and — coming in the Pro tier — eval datasets, LLM-as-judge, A/B testing with statistical significance.
+PromptFlow is a frontend for the prompt-management half of Langfuse, with the UX bent toward authoring and iteration: tag-first organisation and an integrated playground.
 
-Langfuse is the storage layer; PromptFlow is the editor for it. The same prompts get consumed by separate iOS apps (different repos) to demonstrate remote prompt management for production apps.
+Langfuse is the storage layer; PromptFlow is the editor. The same prompts get consumed by separate iOS apps (different repos) to demonstrate remote prompt management for production apps.
 
-> 🚧 In active development. Web app + CLI + MCP server + first iOS consumer (Cadence) are live. Pro tier (auth, evals, A/B) and the second iOS app are next.
+> 🚧 In active development. Web app + CLI + MCP server + first iOS consumer (Cadence) are live.
 
 ## Ecosystem
 
@@ -54,7 +54,7 @@ cd promptflow
 bun install
 cp apps/web/.env.example apps/web/.env.local
 # minimum: fill in LANGFUSE_PUBLIC_KEY + LANGFUSE_SECRET_KEY
-# optional: OPENROUTER_API_KEY (or AI_GATEWAY_API_KEY) for the Playground
+# optional: OPENROUTER_API_KEY (or AI_GATEWAY_API_KEY for Vercel AI SDK) for the Playground
 bun run dev
 # → http://localhost:3003
 ```
@@ -105,7 +105,7 @@ CLI and MCP server are unaffected by web auth — they call Langfuse directly wi
 ## Features
 
 **Web** (`apps/web`)
-- Prompt list with tag filtering, search, version sidebar, inline diff, Cmd-K palette
+- Prompt list with tag filtering, search, version sidebar, inline diff.
 - Compose editor with optional System Prompt + User Context fields; saves text-vs-chat type automatically
 - Playground — streams via OpenRouter or Vercel AI SDK + AI Gateway (env-selected), live token/cost/latency, provider-grouped model picker, per-request provider badge
 - Vercel AI SDK path emits real-time traces to Langfuse via `@langfuse/otel` (same native ingest path OpenRouter uses)
@@ -124,24 +124,6 @@ CLI and MCP server are unaffected by web auth — they call Langfuse directly wi
 **`@promptflow/core`** (private workspace package)
 - Typed Langfuse client wrapper, tag namespace utilities, template validation + variable substitution
 - 45 Vitest unit tests
-
-## Roadmap
-
-**Week 2 — Pro tier + ecosystem**
-
-- [ ] Auth + multi-tenancy (`ee/` directory under BSL 1.1)
-- [ ] Eval datasets, eval runs, LLM-as-judge — *needs a dedicated design pass before implementation*
-- [ ] A/B comparison with paired t-test + bootstrap CIs
-- [x] CLI (`@promptflow/cli` on npm)
-- [x] MCP server exposing Langfuse prompts as MCP Prompts (Claude Desktop / Code / Cursor compatible)
-- [x] OpenTelemetry instrumentation → Langfuse (Vercel AI SDK path via `@langfuse/otel`)
-- [ ] Grafana dashboard
-
-**Week 3 — Mobile + portfolio**
-
-- [x] Voice iOS app — [Cadence](https://github.com/MartinW/cadence). `voice:*` tagged prompts run through `openai/gpt-4o-audio-preview` (single-step audio completion via OpenRouter, since chat models have no verbatim-read mode). TestFlight build still pending.
-- [ ] Image iOS app (separate repo) — `image:*` tagged prompts → `google/gemini-2.5-flash-image`
-- [ ] Portfolio page tying everything together
 
 ## Tag conventions
 
@@ -167,7 +149,7 @@ This mirrors the [Langfuse open-core model](https://langfuse.com/license).
 
 ## Contributing
 
-This is currently a one-person interview portfolio sprint. Contributions welcome after week 3 when the codebase stabilises. In the meantime, issues with bug reports, suggestions, or just kind words are appreciated.
+Issues with bug reports, suggestions, or just kind words are appreciated.
 
 ---
 
