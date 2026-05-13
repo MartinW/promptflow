@@ -2,7 +2,7 @@
 
 A better UI for [Langfuse](https://langfuse.com) prompt management. Open core.
 
-PromptFlow is a frontend for the prompt-management half of Langfuse, with the UX bent toward authoring and iteration: tag-first organisation, a Cmd-K palette, inline diffs, an integrated playground (AIPlay), and — coming in the Pro tier — eval datasets, LLM-as-judge, A/B testing with statistical significance.
+PromptFlow is a frontend for the prompt-management half of Langfuse, with the UX bent toward authoring and iteration: tag-first organisation, a Cmd-K palette, inline diffs, an integrated playground, and — coming in the Pro tier — eval datasets, LLM-as-judge, A/B testing with statistical significance.
 
 Langfuse is the storage layer; PromptFlow is the editor for it. The same prompts get consumed by separate iOS apps (different repos) to demonstrate remote prompt management for production apps.
 
@@ -24,7 +24,7 @@ One Langfuse-backed prompt registry, multiple consumers:
    │  apps/web        │  │  apps/cli        │  │  apps/mcp-server │
    │  (Next.js 16)    │  │  (Commander)     │  │  (MCP stdio)     │
    │  Authoring UI    │  │  Terminal CRUD   │  │  Prompts as MCP  │
-   │  + AIPlay run    │  │  + run via OR    │  │  prompts/tools   │
+   │  + Playground    │  │  + run via OR    │  │  prompts/tools   │
    └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘
             │                     │                     │
             └────────┬────────────┴──────┬──────────────┘
@@ -67,8 +67,8 @@ Both Langfuse and OpenRouter are bring-your-own-keys. Set in `apps/web/.env.loca
 | `LANGFUSE_PUBLIC_KEY` | yes | Langfuse project public key |
 | `LANGFUSE_SECRET_KEY` | yes | Langfuse project secret key (write access) |
 | `LANGFUSE_HOST` | no | Defaults to `https://cloud.langfuse.com` |
-| `OPENROUTER_API_KEY` | optional | Required for AIPlay streaming |
-| `AI_GATEWAY_API_KEY` | optional | Experimental: when set, AIPlay streams via Vercel AI SDK + AI Gateway instead of OpenRouter (takes priority if both are set). Sends AI SDK telemetry to Langfuse via the `@langfuse/otel` span processor. |
+| `OPENROUTER_API_KEY` | optional | Required for Playground streaming |
+| `AI_GATEWAY_API_KEY` | optional | Experimental: when set, Playground streams via Vercel AI SDK + AI Gateway instead of OpenRouter (takes priority if both are set). Sends AI SDK telemetry to Langfuse via the `@langfuse/otel` span processor. |
 | `AUTH_SECRET` | yes | Random secret used to sign session JWTs. Generate with `bunx auth secret`. |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | yes | Google OAuth credentials (see Authentication below). |
 | `AUTH_ALLOWED_EMAILS` | optional | Comma-separated email allowlist. Blank = no email restriction. |
@@ -98,7 +98,7 @@ CLI and MCP server are unaffected — they call OpenRouter and Langfuse directly
 **Web** (`apps/web`)
 - Prompt list with tag filtering, search, version sidebar, inline diff, Cmd-K palette
 - Compose editor with optional System Prompt + User Context fields; saves text-vs-chat type automatically
-- AIPlay playground — streams via OpenRouter or Vercel AI SDK + AI Gateway (env-selected), live token/cost/latency, provider-grouped model picker, per-request provider badge
+- Playground — streams via OpenRouter or Vercel AI SDK + AI Gateway (env-selected), live token/cost/latency, provider-grouped model picker, per-request provider badge
 - Vercel AI SDK path emits real-time traces to Langfuse via `@langfuse/otel` (same native ingest path OpenRouter uses)
 - Drafts by default — explicit "Promote to production" checkbox
 

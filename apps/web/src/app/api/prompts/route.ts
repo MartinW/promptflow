@@ -1,4 +1,5 @@
-import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
+import { getCorpus } from "@/lib/corpus";
+import { isLangfuseConfigured } from "@/lib/server-client";
 
 export const dynamic = "force-dynamic";
 
@@ -7,13 +8,13 @@ export async function GET(): Promise<Response> {
     return Response.json({ data: [] });
   }
   try {
-    const client = getServerClient();
-    const prompts = await client.listPrompts({ limit: 100 });
+    const corpus = await getCorpus();
     return Response.json({
-      data: prompts.map((p) => ({
-        name: p.name,
-        tags: p.tags,
-        latestVersion: Math.max(...p.versions),
+      data: corpus.prompts.map((p) => ({
+        name: p.meta.name,
+        tags: p.meta.tags,
+        latestVersion: Math.max(0, ...p.meta.versions),
+        references: p.references,
       })),
     });
   } catch (err) {

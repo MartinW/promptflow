@@ -39,8 +39,18 @@ export interface PromptFlowClient {
    *
    * Runtime apps that should only pull live prompts must pass
    * `{ label: "production" }` explicitly.
+   *
+   * `resolve` controls Langfuse's server-side prompt-composition expansion.
+   * Defaults to `true` (Langfuse's own default), which means `@@@langfusePrompt:...@@@`
+   * tags in the body are substituted with the referenced prompts before the
+   * response is returned. Pass `resolve: false` to receive the raw body with
+   * tags intact — required by the editor, the detail view, the canvas, and
+   * any code that needs to introspect references.
    */
-  getPrompt(name: string, opts?: { version?: number; label?: string }): Promise<Prompt>;
+  getPrompt(
+    name: string,
+    opts?: { version?: number; label?: string; resolve?: boolean },
+  ): Promise<Prompt>;
 
   /**
    * Find the first prompt that carries a given tag, returning the production
@@ -109,6 +119,7 @@ export function createClient(config: ClientConfig): PromptFlowClient {
       const url = new URL(`/api/public/v2/prompts/${encodeURIComponent(name)}`, baseUrl);
       if (opts.version !== undefined) url.searchParams.set("version", String(opts.version));
       if (label !== undefined) url.searchParams.set("label", label);
+      if (opts.resolve === false) url.searchParams.set("resolve", "false");
 
       let response: Response;
       try {

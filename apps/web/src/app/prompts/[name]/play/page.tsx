@@ -9,7 +9,7 @@ import {
   type ModelGroup,
 } from "@/lib/openrouter";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
-import { AIPlay, type PromptShape } from "./aiplay";
+import { Playground, type PromptShape } from "./playground";
 
 export const dynamic = "force-dynamic";
 
@@ -129,7 +129,7 @@ export default async function PlayPage({
         </Link>
       </nav>
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">AIPlay</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Playground</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Run this prompt against any model. Iterate variables and inputs live.
         </p>
@@ -148,7 +148,7 @@ export default async function PlayPage({
         </Card>
       ) : null}
 
-      <AIPlay
+      <Playground
         promptName={name}
         version={version}
         shape={shape}

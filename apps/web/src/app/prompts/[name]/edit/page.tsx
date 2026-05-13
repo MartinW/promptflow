@@ -1,7 +1,9 @@
 import { PromptFlowError } from "@promptflow/core";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { NeighbourPrompt } from "@/components/canvas/per-prompt-canvas";
 import { Card } from "@/components/ui/card";
+import { getCorpus } from "@/lib/corpus";
 import { parsePromptToShape } from "@/lib/prompt-shape";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
 import { EditPromptForm } from "./form";
@@ -29,7 +31,10 @@ export default async function EditPromptPage({
   let currentVersion = 0;
   let initialTags: string[] = [];
   try {
-    const prompt = await client.getPrompt(name, { version: baseVersion });
+    // resolve: false so the editor receives the raw body with `@@@langfusePrompt`
+    // tags intact. Otherwise Langfuse expands them server-side and the user
+    // would see the resolved text, then accidentally save that as the body.
+    const prompt = await client.getPrompt(name, { version: baseVersion, resolve: false });
     parsed = parsePromptToShape(prompt);
     currentVersion = prompt.version;
     initialTags = prompt.tags;
@@ -38,6 +43,33 @@ export default async function EditPromptPage({
       notFound();
     }
     throw err;
+  }
+
+  // Build the per-prompt neighbour map from the corpus so the embedded canvas
+  // can render referenced + referencing prompts without extra fetches. Failing
+  // to load the corpus must not block editing — fall through to an empty map.
+  let reverseRefs: string[] = [];
+  let corpusByName: Record<string, NeighbourPrompt> = {};
+  try {
+    const corpus = await getCorpus();
+    reverseRefs = corpus.referenceGraph.nodes.get(name)?.referencedBy ?? [];
+    const neighbourNames = new Set<string>([
+      ...(corpus.referenceGraph.nodes.get(name)?.references ?? []),
+      ...reverseRefs,
+    ]);
+    for (const neighbourName of neighbourNames) {
+      const entry = corpus.byName.get(neighbourName);
+      const graphNode = corpus.referenceGraph.nodes.get(neighbourName);
+      corpusByName[neighbourName] = {
+        name: neighbourName,
+        version: entry ? Math.max(0, ...entry.meta.versions) : 0,
+        tags: entry?.meta.tags ?? [],
+        references: graphNode?.references.length ?? 0,
+        referencedBy: graphNode?.referencedBy.length ?? 0,
+      };
+    }
+  } catch {
+    // Corpus may fail in dev without env; canvas just renders the focus node alone.
   }
 
   if (parsed.kind === "unsupported") {
@@ -85,6 +117,8 @@ export default async function EditPromptPage({
         initialShape={parsed.shape}
         initialTags={initialTags.join(", ")}
         baseVersion={currentVersion}
+        reverseRefs={reverseRefs}
+        corpusByName={corpusByName}
       />
     </main>
   );

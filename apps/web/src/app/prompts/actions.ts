@@ -8,6 +8,7 @@ import {
 } from "@promptflow/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { invalidateCorpus } from "@/lib/corpus";
 import { buildSaveInput, type ComposeShape } from "@/lib/prompt-shape";
 import { getServerClient } from "@/lib/server-client";
 
@@ -73,6 +74,7 @@ export async function createPromptAction(formData: FormData): Promise<CreateProm
     return { ok: false, error: formatError(err) };
   }
 
+  invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(name)}`);
   redirect(`/prompts/${encodeURIComponent(name)}`);
@@ -107,6 +109,7 @@ export async function updatePromptAction(formData: FormData): Promise<CreateProm
     return { ok: false, error: formatError(err) };
   }
 
+  invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(name)}`);
   redirect(`/prompts/${encodeURIComponent(name)}`);
@@ -128,6 +131,7 @@ export async function deletePromptAction(formData: FormData): Promise<DeleteProm
     return { ok: false, error: formatError(err) };
   }
 
+  invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(name)}`);
   redirect("/prompts");
@@ -228,6 +232,7 @@ export async function renamePromptAction(formData: FormData): Promise<RenameProm
     }
   }
 
+  invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(oldName)}`);
   revalidatePath(`/prompts/${encodeURIComponent(newName)}`);

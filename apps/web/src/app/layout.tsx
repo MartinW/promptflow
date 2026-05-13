@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, JetBrains_Mono, Lora, Space_Grotesk } from "next/font/google";
+import Script from "next/script";
 import { Toaster } from "sonner";
 import { AppHeader } from "@/components/app-header";
 import { CommandPalette } from "@/components/command-palette";
@@ -51,9 +52,20 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: styleVariantInitScript }} />
-        <script dangerouslySetInnerHTML={{ __html: themeFamilyInitScript }} />
-        <script dangerouslySetInnerHTML={{ __html: fontFamilyInitScript }} />
+        {/* `next/script` with `beforeInteractive` is the Next.js-blessed way
+            to inject pre-hydration init scripts. Unlike a literal `<script>`
+            JSX element, Next.js handles the render path so React 19's
+            "script inside React component" warning doesn't fire. These three
+            set CSS classes on <html> before paint to avoid theme/font FOUC. */}
+        <Script id="pf-style-variant" strategy="beforeInteractive">
+          {styleVariantInitScript}
+        </Script>
+        <Script id="pf-theme-family" strategy="beforeInteractive">
+          {themeFamilyInitScript}
+        </Script>
+        <Script id="pf-font-family" strategy="beforeInteractive">
+          {fontFamilyInitScript}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider>

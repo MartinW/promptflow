@@ -3,6 +3,8 @@ import {
   formatTag,
   inNamespace,
   matchesFilter,
+  matchesTags,
+  namespaceColor,
   Namespaces,
   parseTag,
   tagsInNamespace,
@@ -111,5 +113,47 @@ describe("matchesFilter", () => {
 
   it("trims whitespace inside filter expression", () => {
     expect(matchesFilter(["voice", "env:prod"], " voice ,  env:prod ")).toBe(true);
+  });
+});
+
+describe("matchesTags", () => {
+  it("defaults to AND mode", () => {
+    expect(matchesTags(["voice", "env:prod"], ["voice", "env:prod"])).toBe(true);
+    expect(matchesTags(["voice"], ["voice", "env:prod"])).toBe(false);
+  });
+
+  it("supports OR mode", () => {
+    expect(matchesTags(["voice"], ["voice", "env:prod"], "or")).toBe(true);
+    expect(matchesTags(["unrelated"], ["voice", "env:prod"], "or")).toBe(false);
+  });
+
+  it("returns true for an empty filter list", () => {
+    expect(matchesTags(["anything"], [], "and")).toBe(true);
+    expect(matchesTags(["anything"], [], "or")).toBe(true);
+  });
+});
+
+describe("namespaceColor", () => {
+  it("returns a fixed slot for each known namespace", () => {
+    expect(namespaceColor("voice").name).toBe("sky");
+    expect(namespaceColor("env").name).toBe("indigo");
+    expect(namespaceColor("lang").name).toBe("amber");
+  });
+
+  it("accepts a full tag and extracts its namespace", () => {
+    expect(namespaceColor("voice:greeting")).toEqual(namespaceColor("voice"));
+    expect(namespaceColor("app:cadence:foo")).toEqual(namespaceColor("app"));
+  });
+
+  it("is deterministic for unknown tags", () => {
+    const a1 = namespaceColor("custom");
+    const a2 = namespaceColor("custom");
+    expect(a1).toEqual(a2);
+  });
+
+  it("returns differing hues for different unknown namespaces", () => {
+    const a = namespaceColor("aaaaa");
+    const b = namespaceColor("zzzzz");
+    expect(a.hue).not.toBe(b.hue);
   });
 });
