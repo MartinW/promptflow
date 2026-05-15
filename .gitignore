@@ -39,6 +39,9 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Playwright saved auth state
+.auth/
+
 # Claude Code local settings (already auto-ignored, listing for clarity)
 .claude/settings.local.json
 

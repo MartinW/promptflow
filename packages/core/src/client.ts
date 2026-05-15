@@ -54,6 +54,9 @@ export interface PromptFlowClient {
    */
   listByFilter(filter: string): Promise<PromptMeta[]>;
 
+  /** Return the name of the connected Langfuse project, or null on failure. */
+  getProjectName(): Promise<string | null>;
+
   /** Create a new prompt or version of an existing prompt. */
   createPrompt(input: CreatePromptInput): Promise<Prompt>;
 
@@ -137,6 +140,15 @@ export function createClient(config: ClientConfig): PromptFlowClient {
       // we expect (low hundreds of prompts).
       const all = await this.listPrompts({ limit: 100 });
       return all.filter((p) => matchesFilter(p.tags, filter));
+    },
+
+    async getProjectName(): Promise<string | null> {
+      try {
+        const result = await sdk.api.projectsGet();
+        return result.data?.[0]?.name ?? null;
+      } catch {
+        return null;
+      }
     },
 
     async createPrompt(input: CreatePromptInput): Promise<Prompt> {

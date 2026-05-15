@@ -27,10 +27,14 @@ export default async function PromptsPage({
   const tag = params.tag?.trim();
 
   let prompts: PromptMeta[];
+  let projectName: string | null = null;
   let error: string | null = null;
   try {
     const client = getServerClient();
-    prompts = await client.listPrompts({ tag, limit: 100 });
+    [prompts, projectName] = await Promise.all([
+      client.listPrompts({ tag, limit: 100 }),
+      client.getProjectName(),
+    ]);
   } catch (err) {
     prompts = [];
     error =
@@ -50,7 +54,7 @@ export default async function PromptsPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Prompts</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {prompts.length} {prompts.length === 1 ? "prompt" : "prompts"} in this Langfuse project.
+            {projectName ?? "Langfuse"} ({prompts.length} {prompts.length === 1 ? "prompt" : "prompts"})
           </p>
         </div>
         <Link href="/prompts/new" className={buttonVariants()}>
