@@ -61,7 +61,7 @@ export function NewPromptForm() {
             name="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="voice:greeting"
+            placeholder="promptname"
             disabled={pending}
             required
           />
@@ -73,13 +73,13 @@ export function NewPromptForm() {
 
         <Field
           label="Tags"
-          hint="Comma-separated. Convention: voice, image, eval, app:<name>:<feature>, lang:en-GB, env:prod"
+          hint="Comma-separated."
         >
           <Input
             name="tags"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="voice, env:prod"
+            placeholder=""
             disabled={pending}
           />
         </Field>
@@ -133,12 +133,13 @@ function Field({
 }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-medium">{label}</span>
-        {hint && !error ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
-      </div>
+      <span className="text-sm font-medium">{label}</span>
       {children}
-      {error ? <p className="text-xs text-red-600 dark:text-red-400">{error}</p> : null}
+      {error ? (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }
