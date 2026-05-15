@@ -27,9 +27,6 @@ export default function NewPromptPage() {
       </nav>
       <header className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight">New prompt</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          A text prompt with mustache-style variables. Saved as v1 with the production label.
-        </p>
       </header>
       <NewPromptForm />
     </main>
