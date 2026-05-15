@@ -13,10 +13,13 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "screenshot": "bun scripts/screenshot.ts",
+    "screenshot:setup": "bun scripts/screenshot-setup.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
+    "playwright": "^1.50.0",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0"
   },

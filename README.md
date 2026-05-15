@@ -8,6 +8,8 @@ Langfuse is the storage layer; PromptFlow is the editor. The same prompts get co
 
 > 🚧 In active development. Web app + CLI + MCP server + first iOS consumer (Cadence) are live.
 
+![PromptFlow homepage](docs/homepage.png)
+
 ## Ecosystem
 
 One Langfuse-backed prompt registry, multiple consumers:
