@@ -4,7 +4,9 @@ import {
   type CallToolResult,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import type { CreatePromptInput, Prompt, PromptFlowClient } from "@promptflow/core";
 import { extractVariables, isPlaceholder, matchesFilter, renderPrompt } from "@promptflow/core";
+import { diffLines } from "diff";
 import Fuse from "fuse.js";
 import type { PromptCache } from "../cache";
 import type { ServerConfig } from "../config";
@@ -21,18 +23,21 @@ export interface ToolDef {
  * Build the tool list this server exposes. Exported so tests can assert
  * registration without spinning up the MCP transport.
  */
-export function buildTools(cache: PromptCache, config: ServerConfig): ToolDef[] {
-  const tools: ToolDef[] = [
+export function buildTools(
+  cache: PromptCache,
+  config: ServerConfig,
+  client: PromptFlowClient,
+): ToolDef[] {
+  return [
     listPromptsTool(cache),
     searchPromptsTool(cache),
     getPromptMetadataTool(cache),
     renderPromptTool(cache),
     refreshPromptsTool(cache),
+    createPromptTool(cache, client),
+    diffPromptsTool(cache),
+    runPromptTool(cache, config.openrouterApiKey),
   ];
-  if (config.openrouterApiKey) {
-    tools.push(runPromptTool(cache, config.openrouterApiKey));
-  }
-  return tools;
 }
 
 /**
@@ -48,8 +53,9 @@ export function registerToolHandlers(
   cache: PromptCache,
   config: ServerConfig,
   logger: Logger,
+  client: PromptFlowClient,
 ): void {
-  const tools = buildTools(cache, config);
+  const tools = buildTools(cache, config, client);
   const byName = new Map(tools.map((t) => [t.name, t]));
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -231,7 +237,100 @@ function refreshPromptsTool(cache: PromptCache): ToolDef {
   };
 }
 
-function runPromptTool(cache: PromptCache, openrouterKey: string): ToolDef {
+function createPromptTool(cache: PromptCache, client: PromptFlowClient): ToolDef {
+  return {
+    name: "create_prompt",
+    description:
+      "Create a new version of a prompt in Langfuse. For text prompts pass a string body; for chat prompts pass an array of {role, content} objects.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Prompt name (may include path segments, e.g. meditation/morning)" },
+        type: { type: "string", enum: ["text", "chat"] },
+        prompt: { description: "String body for text prompts; array of {role, content} for chat prompts." },
+        tags: { type: "array", items: { type: "string" } },
+        commit_message: { type: "string" },
+        promote: { type: "boolean", description: "Apply the production label to this version." },
+      },
+      required: ["name", "type", "prompt"],
+    },
+    handler: async (args) => {
+      const name = String(args.name);
+      const type = String(args.type);
+      if (type !== "text" && type !== "chat") {
+        return errorResult(`Invalid type "${type}" — must be "text" or "chat"`);
+      }
+      const tags = Array.isArray(args.tags) ? (args.tags as string[]) : undefined;
+      const labels = args.promote === true ? ["production"] : undefined;
+      const commitMessage =
+        typeof args.commit_message === "string" ? args.commit_message : undefined;
+
+      const input: CreatePromptInput =
+        type === "text"
+          ? { type: "text", name, prompt: String(args.prompt), tags, labels, commitMessage }
+          : {
+              type: "chat",
+              name,
+              prompt: args.prompt as Extract<Prompt, { type: "chat" }>["prompt"],
+              tags,
+              labels,
+              commitMessage,
+            };
+
+      const result = await client.createPrompt(input);
+      cache.refresh();
+      return jsonResult({
+        name: result.name,
+        version: result.version,
+        type: result.type,
+        labels: result.labels,
+        tags: result.tags,
+      });
+    },
+  };
+}
+
+function diffPromptsTool(cache: PromptCache): ToolDef {
+  return {
+    name: "diff_prompts",
+    description:
+      "Show the line-by-line diff between two versions of a text prompt. Returns structured added/removed/unchanged line groups.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        v1: { type: "integer", description: "Older version number" },
+        v2: { type: "integer", description: "Newer version number" },
+      },
+      required: ["name", "v1", "v2"],
+    },
+    handler: async (args) => {
+      const name = String(args.name);
+      const v1 = Number(args.v1);
+      const v2 = Number(args.v2);
+
+      const [a, b] = await Promise.all([
+        cache.get(name, { version: v1 }),
+        cache.get(name, { version: v2 }),
+      ]);
+
+      if (a.type !== "text" || b.type !== "text") {
+        return errorResult("diff_prompts currently supports text prompts only");
+      }
+
+      const changes = diffLines(a.prompt, b.prompt).map((part) => ({
+        type: part.added ? "added" : part.removed ? "removed" : "unchanged",
+        lines: part.value
+          .split("\n")
+          .filter((l, i, arr) => !(i === arr.length - 1 && l === "")),
+      }));
+
+      return jsonResult({ name, v1, v2, changes });
+    },
+  };
+}
+
+function runPromptTool(cache: PromptCache, openrouterKey: string | undefined): ToolDef {
   return {
     name: "run_prompt",
     description:
@@ -248,6 +347,11 @@ function runPromptTool(cache: PromptCache, openrouterKey: string): ToolDef {
       required: ["name"],
     },
     handler: async (args) => {
+      if (!openrouterKey) {
+        return errorResult(
+          "No API key configured for running prompts. Set OPENROUTER_API_KEY when registering the MCP server.",
+        );
+      }
       const prompt = await cache.get(String(args.name), {
         version: typeof args.version === "number" ? args.version : undefined,
         label: typeof args.label === "string" ? args.label : undefined,
