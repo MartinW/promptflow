@@ -1,6 +1,8 @@
-import { isPlaceholder, renderPrompt } from "@promptflow/core";
+import { isPlaceholder, renderPrompt, type Prompt } from "@promptflow/core";
 import { pickProvider, streamViaVercel } from "@/lib/aiprovider";
-import { getServerClient } from "@/lib/server-client";
+import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
+import { langfuseSpanProcessor } from "@/instrumentation";
+import { startObservation, type LangfuseGenerationAttributes } from "@langfuse/tracing";
 
 export const dynamic = "force-dynamic";
 
@@ -58,15 +60,16 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   let messages: ChatMessage[];
+  let fetchedPrompt: Prompt;
   try {
     const client = getServerClient();
-    const prompt = await client.getPrompt(body.promptName, { version: body.version });
+    fetchedPrompt = await client.getPrompt(body.promptName, { version: body.version });
     const variables = body.variables ?? {};
-    if (prompt.type === "text") {
-      messages = [{ role: "user", content: renderPrompt(prompt.prompt, variables) }];
+    if (fetchedPrompt.type === "text") {
+      messages = [{ role: "user", content: renderPrompt(fetchedPrompt.prompt, variables) }];
     } else {
       messages = [];
-      for (const m of prompt.prompt) {
+      for (const m of fetchedPrompt.prompt) {
         if (isPlaceholder(m)) {
           // Placeholders aren't expanded in v1 — treat as empty user message so the
           // upstream call doesn't fail outright.
@@ -89,14 +92,25 @@ export async function POST(req: Request): Promise<Response> {
     const stream = streamViaVercel({
       messages,
       model: body.model,
-      promptName: body.promptName,
-      promptVersion: body.version,
+      prompt: fetchedPrompt,
     });
     return sseResponse(stream, "vercel");
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY!;
   const startedAt = Date.now();
+
+  // Start a Langfuse generation span for the OpenRouter call. Uses the same
+  // OTel → LangfuseSpanProcessor pipeline as the Vercel path, so prompt linking
+  // works regardless of which AI provider handles the actual inference.
+  const genAttrs: LangfuseGenerationAttributes = {
+    model: body.model,
+    input: messages,
+    prompt: { name: fetchedPrompt.name, version: fetchedPrompt.version, isFallback: false },
+  };
+  const gen = isLangfuseConfigured()
+    ? startObservation("playground", genAttrs, { asType: "generation" as const })
+    : null;
 
   const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -128,6 +142,7 @@ export async function POST(req: Request): Promise<Response> {
       const encoder = new TextEncoder();
       let buffer = "";
       let lastUsage: OpenRouterChunk["usage"] | undefined;
+      let fullOutput = "";
 
       function send(event: object) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
@@ -153,7 +168,10 @@ export async function POST(req: Request): Promise<Response> {
               continue;
             }
             const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) send({ type: "token", content: delta });
+            if (delta) {
+              send({ type: "token", content: delta });
+              fullOutput += delta;
+            }
             if (parsed.usage) lastUsage = parsed.usage;
           }
         }
@@ -169,6 +187,23 @@ export async function POST(req: Request): Promise<Response> {
         });
       } finally {
         controller.close();
+        if (gen) {
+          gen.update({
+            output: fullOutput,
+            ...(lastUsage && {
+              usageDetails: {
+                input: lastUsage.prompt_tokens ?? 0,
+                output: lastUsage.completion_tokens ?? 0,
+              },
+            }),
+          });
+          gen.end();
+          try {
+            await langfuseSpanProcessor.forceFlush();
+          } catch {
+            // ignore
+          }
+        }
       }
     },
   });
