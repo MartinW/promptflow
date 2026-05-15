@@ -74,7 +74,7 @@ describe("MCP smoke", () => {
       {
         name: "alpha",
         versions: [1],
-        tags: ["voice:greeting", "env:prod"],
+        tags: ["voice:greeting", "lang:en-GB"],
         labels: ["production"],
         lastUpdatedAt: "2025-01-01T00:00:00Z",
       },
@@ -98,7 +98,7 @@ describe("MCP smoke", () => {
     it("applies a comma-separated AND tag filter via @promptflow/core", async () => {
       const [listPrompts] = buildTools(makeCache(prompts), makeConfig());
       const result = await listPrompts.handler({
-        tag_filter: "voice:greeting,env:prod",
+        tag_filter: "voice:greeting,lang:en-GB",
       });
       const text = (result.content[0] as { text: string }).text;
       const payload = JSON.parse(text) as { data: { name: string }[] };

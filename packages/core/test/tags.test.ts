@@ -91,25 +91,27 @@ describe("inNamespace", () => {
 
 describe("tagsInNamespace", () => {
   it("filters down to one namespace", () => {
-    const tags = ["voice:greeting", "app:cadence:greeting", "env:prod", "voice:reminder"];
+    const tags = ["voice:greeting", "app:cadence:greeting", "eval:helpfulness", "voice:reminder"];
     expect(tagsInNamespace(tags, "voice")).toEqual(["voice:greeting", "voice:reminder"]);
   });
 });
 
 describe("matchesFilter", () => {
   it("returns true when all filter tags are present (AND semantics)", () => {
-    expect(matchesFilter(["voice", "env:prod", "lang:en-GB"], "voice,env:prod")).toBe(true);
+    expect(matchesFilter(["voice:greeting", "lang:en-GB"], "voice:greeting,lang:en-GB")).toBe(true);
   });
 
   it("returns false when any filter tag is missing", () => {
-    expect(matchesFilter(["voice"], "voice,env:prod")).toBe(false);
+    expect(matchesFilter(["voice:greeting"], "voice:greeting,lang:en-GB")).toBe(false);
   });
 
   it("returns true for an empty filter", () => {
-    expect(matchesFilter(["voice"], "")).toBe(true);
+    expect(matchesFilter(["voice:greeting"], "")).toBe(true);
   });
 
   it("trims whitespace inside filter expression", () => {
-    expect(matchesFilter(["voice", "env:prod"], " voice ,  env:prod ")).toBe(true);
+    expect(
+      matchesFilter(["voice:greeting", "lang:en-GB"], " voice:greeting ,  lang:en-GB "),
+    ).toBe(true);
   });
 });

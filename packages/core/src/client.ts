@@ -50,7 +50,7 @@ export interface PromptFlowClient {
 
   /**
    * List prompts matching a comma-separated tag filter (AND semantics).
-   * E.g. `listByFilter("voice,env:prod")`.
+   * E.g. `listByFilter("voice:greeting,lang:en-GB")`.
    */
   listByFilter(filter: string): Promise<PromptMeta[]>;
 

@@ -50,7 +50,7 @@ Three options, in priority order:
 ## Commands
 
 ```bash
-promptflow prompts list [--tag voice,env:prod] [--limit 50] [--json]
+promptflow prompts list [--tag voice:greeting,lang:en-GB] [--limit 50] [--json]
 promptflow prompts get <name> [-v 3] [-l production] [--json]
 promptflow prompts pull <name> [-o file.json]
 promptflow prompts push <file> [--name override] [--commit "message"] [--promote]
@@ -64,7 +64,7 @@ promptflow prompts diff <name> <v1> <v2>
 
 ## Tag conventions
 
-Filters use AND semantics: `--tag voice,env:prod` returns prompts that carry **both** tags.
+Filters use AND semantics: `--tag voice:greeting,lang:en-GB` returns prompts that carry **both** tags.
 
 PromptFlow's tag namespaces:
 
@@ -75,7 +75,6 @@ PromptFlow's tag namespaces:
 | `eval:` | LLM-as-judge templates |
 | `app:<name>:<feature>` | Scoped to a consumer app |
 | `lang:<code>` | Locale modifier |
-| `env:<environment>` | Deployment scope |
 
 ## License
 

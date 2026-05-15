@@ -84,7 +84,7 @@ function listPromptsTool(cache: PromptCache): ToolDef {
       properties: {
         tag_filter: {
           type: "string",
-          description: 'Comma-separated tag filter, e.g. "voice,env:prod".',
+          description: 'Comma-separated tag filter, e.g. "voice:greeting,lang:en-GB".',
         },
         limit: { type: "integer", default: 50 },
       },

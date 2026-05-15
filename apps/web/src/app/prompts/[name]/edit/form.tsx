@@ -97,7 +97,7 @@ export function EditPromptForm({ name, initialShape, initialTags, baseVersion }:
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             disabled={pending}
-            placeholder="voice, env:prod"
+            placeholder="voice:greeting, lang:en-GB"
           />
         </div>
 

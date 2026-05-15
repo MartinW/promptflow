@@ -23,8 +23,6 @@ export const Namespaces = {
   app: "app",
   /** Locale modifier, e.g. `lang:en-GB`. */
   lang: "lang",
-  /** Deployment scope, e.g. `env:prod`, `env:staging`. */
-  env: "env",
 } as const;
 
 export type Namespace = (typeof Namespaces)[keyof typeof Namespaces];
@@ -113,8 +111,8 @@ export function tagsInNamespace(tags: string[], namespace: Namespace): string[] 
  * The filter is an AND of comma-separated tags. Returns true if every filter
  * tag is present on the prompt. Used by CLI/MCP for `--tag-filter` flags.
  *
- * matchesFilter(["voice", "env:prod"], "voice,env:prod") → true
- * matchesFilter(["voice"],            "voice,env:prod") → false
+ * matchesFilter(["voice:greeting", "lang:en-GB"], "voice:greeting,lang:en-GB") → true
+ * matchesFilter(["voice:greeting"],               "voice:greeting,lang:en-GB") → false
  */
 export function matchesFilter(promptTags: string[], filter: string): boolean {
   const filterTags = filter
