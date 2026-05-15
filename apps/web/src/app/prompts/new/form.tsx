@@ -73,13 +73,13 @@ export function NewPromptForm() {
 
         <Field
           label="Tags"
-          hint="Comma-separated. Convention: voice, image, eval, app:<name>:<feature>, lang:en-GB"
+          hint="Comma-separated."
         >
           <Input
             name="tags"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="voice:greeting, lang:en-GB"
+            placeholder=""
             disabled={pending}
           />
         </Field>
