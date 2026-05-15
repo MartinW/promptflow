@@ -1,0 +1,85 @@
+---
+title: CLI Overview
+description: Manage Langfuse prompts from the terminal.
+---
+
+`@promptflow/cli` gives you terminal access to your prompt registry: list, inspect, pull, edit, push, run, and diff — all without opening a browser.
+
+<Note>
+  The package is built and tested but not yet published to npm. Use the [build from source](#build-from-source) instructions until the npm release.
+</Note>
+
+## Install
+
+**On demand (once published):**
+
+```bash
+npx @promptflow/cli prompts list
+```
+
+**Global install (once published):**
+
+```bash
+npm i -g @promptflow/cli
+# or
+bun add -g @promptflow/cli
+
+promptflow --help
+```
+
+### Build from source
+
+```bash
+git clone https://github.com/MartinW/promptflow.git
+cd promptflow
+bun install
+bunx turbo run build --filter=cli
+
+node apps/cli/dist/index.js --help
+```
+
+Optional alias for convenience:
+
+```bash
+alias pf='node /absolute/path/to/promptflow/apps/cli/dist/index.js'
+```
+
+## Configure credentials
+
+Three options, applied in priority order:
+
+<Steps>
+  <Step title="Environment variables">
+    Set in your shell or `.env` file:
+
+    ```bash
+    LANGFUSE_PUBLIC_KEY=pk-lf-...
+    LANGFUSE_SECRET_KEY=sk-lf-...
+    LANGFUSE_HOST=https://cloud.langfuse.com   # optional
+    OPENROUTER_API_KEY=sk-or-...               # optional; needed for `prompts run`
+    ```
+  </Step>
+  <Step title="Saved config file">
+    Run `promptflow auth` to write credentials to `~/.promptflow/config.json`:
+
+    ```bash
+    promptflow auth \
+      --public-key pk-lf-... \
+      --secret-key sk-lf-... \
+      --openrouter-key sk-or-...
+    ```
+
+    Run `promptflow auth` with no arguments to print the current saved config.
+  </Step>
+  <Step title="Mix (env overrides file)">
+    Env vars take priority over the config file per-invocation. Useful for targeting a different Langfuse host temporarily:
+
+    ```bash
+    LANGFUSE_HOST=https://staging.example.com promptflow prompts list
+    ```
+  </Step>
+</Steps>
+
+## Next steps
+
+See [Commands](/cli/commands) for the full command reference with examples.

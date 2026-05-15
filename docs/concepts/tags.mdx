@@ -1,0 +1,47 @@
+---
+title: Tag Conventions
+description: How PromptFlow layers namespaced tag conventions on top of Langfuse's plain-string tags.
+---
+
+Langfuse supports plain-string tags on prompts. PromptFlow layers structured namespaces on top, encoded as constants in `@promptflow/core`. This makes it possible for consumers — the CLI, MCP server, and iOS apps — to filter prompts reliably without hard-coding names.
+
+## Namespaces
+
+| Namespace | Purpose | Example |
+|---|---|---|
+| `voice:` | TTS-optimised templates — short sentences, no markdown | `voice:greeting` |
+| `image:` | Templates authored for image-generation models | `image:product-shot` |
+| `eval:` | LLM-as-judge evaluation templates | `eval:helpfulness` |
+| `app:` | Scope to a specific consumer app | `app:cadence:greeting` |
+| `lang:` | Locale modifier | `lang:en-GB` |
+
+## Composition
+
+Tags compose — a single prompt can carry several namespaced tags. Consumers filter with **AND semantics**: a prompt must carry all specified tags to match.
+
+```bash
+# Returns prompts tagged with both voice:greeting AND lang:en-GB
+promptflow prompts list --tag voice:greeting,lang:en-GB
+```
+
+The same AND semantics apply in the CLI `--tag` flag, the MCP server's `PROMPTFLOW_TAG_FILTER` env var, and the `list_prompts` tool's `tag_filter` argument.
+
+## The `app:` namespace
+
+The `app:` namespace is hierarchical by convention: `app:<name>:<feature>`. For example:
+
+- `app:cadence` — any prompt scoped to the Cadence iOS app
+- `app:cadence:greeting` — the greeting feature within Cadence
+
+Setting `PROMPTFLOW_TAG_FILTER=app:cadence` on the MCP server exposes only prompts tagged `app:cadence` (or `app:cadence:*` if you apply the prefix filter) to that client registration — keeping different consumers from seeing each other's prompts.
+
+## Where conventions live
+
+Tag namespace strings are constants in `packages/core/src/tags.ts`, so they can be imported in TypeScript consumers:
+
+```typescript
+import { TAG_NAMESPACES } from "@promptflow/core";
+
+TAG_NAMESPACES.VOICE  // "voice:"
+TAG_NAMESPACES.APP    // "app:"
+```

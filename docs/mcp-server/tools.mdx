@@ -1,0 +1,55 @@
+---
+title: Tools & Configuration
+description: MCP tools exposed by the server and all configuration variables.
+---
+
+## Tools
+
+The server exposes six tools in addition to MCP Prompts.
+
+| Tool | Description |
+|---|---|
+| `list_prompts` | List all accessible prompts. Accepts optional `tag_filter` (comma-separated, AND semantics). |
+| `search_prompts` | Fuzzy search by name, tags, or labels. |
+| `get_prompt_metadata` | Return type, versions, labels, and auto-detected variables for a named prompt. |
+| `render_prompt` | Substitute variables into a prompt template and return the rendered messages — without executing. |
+| `refresh_prompts` | Flush the in-memory cache and re-fetch from Langfuse immediately. |
+| `run_prompt` | Execute a prompt via OpenRouter and return the response. Only registered when `OPENROUTER_API_KEY` is set. |
+
+## Configuration
+
+All configuration is via environment variables passed in your MCP client registration.
+
+| Variable | Default | Description |
+|---|---|---|
+| `LANGFUSE_PUBLIC_KEY` | — | **Required.** Langfuse project public key. |
+| `LANGFUSE_SECRET_KEY` | — | **Required.** Langfuse project secret key. |
+| `LANGFUSE_HOST` | `https://cloud.langfuse.com` | Override for self-hosted Langfuse. |
+| `PROMPTFLOW_TAG_FILTER` | — | AND tag filter scoping which prompts the LLM sees (e.g. `app:cadence`). |
+| `PROMPTFLOW_LABEL` | `latest` | Default Langfuse label when no version is specified in a prompt name. |
+| `PROMPTFLOW_CACHE_TTL_SECONDS` | `300` | In-memory cache TTL in seconds. |
+| `OPENROUTER_API_KEY` | — | Enables the `run_prompt` tool. |
+| `PROMPTFLOW_LOG_LEVEL` | `warn` | Log verbosity: `debug`, `info`, `warn`, or `error`. Logs go to stderr. |
+
+## Example with all options
+
+```json
+{
+  "mcpServers": {
+    "promptflow": {
+      "command": "npx",
+      "args": ["-y", "@promptflow/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-...",
+        "LANGFUSE_HOST": "https://cloud.langfuse.com",
+        "PROMPTFLOW_TAG_FILTER": "app:cadence",
+        "PROMPTFLOW_LABEL": "production",
+        "PROMPTFLOW_CACHE_TTL_SECONDS": "60",
+        "OPENROUTER_API_KEY": "sk-or-...",
+        "PROMPTFLOW_LOG_LEVEL": "info"
+      }
+    }
+  }
+}
+```

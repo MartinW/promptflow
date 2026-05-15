@@ -1,0 +1,69 @@
+---
+title: Authentication
+description: Optionally gate the web app with Google sign-in.
+---
+
+## Default: open access
+
+By default the app is completely open — no sign-in required. This is intentional for local development and private-network deployments.
+
+<Warning>
+  **If you deploy on a public URL without auth, anyone who finds it can read your Langfuse prompts and burn through your OpenRouter / AI Gateway quota.** Either enable auth below, put the app behind a VPN or Cloudflare Access, or both. There is no built-in rate-limiting.
+</Warning>
+
+## Enabling Google sign-in
+
+Authentication uses [Auth.js v5](https://authjs.dev) with a JWT session strategy — no database required.
+
+All **three** of the following must be set in `apps/web/.env.local`. If any are missing, auth is disabled entirely.
+
+### Step 1 — Generate AUTH_SECRET
+
+```bash
+bunx auth secret
+```
+
+This writes `AUTH_SECRET` to `.env.local` automatically, or copy the printed value in manually.
+
+### Step 2 — Create a Google OAuth app
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. **Create Credentials → OAuth client ID → Web application.**
+3. Add authorized redirect URIs:
+   - `http://localhost:3003/api/auth/callback/google` (local dev)
+   - `https://<your-prod-host>/api/auth/callback/google` (production)
+4. Copy the **Client ID** and **Client Secret**.
+
+### Step 3 — Set the variables
+
+```bash
+AUTH_SECRET=<generated above>
+AUTH_GOOGLE_ID=<your client ID>
+AUTH_GOOGLE_SECRET=<your client secret>
+```
+
+Once all three are present, every unauthenticated request is redirected to `/sign-in`.
+
+## Restricting access
+
+By default, any Google account can sign in. Narrow it with the allowlist variables:
+
+```bash
+# Allow specific addresses
+AUTH_ALLOWED_EMAILS=alice@example.com,bob@example.com
+
+# Allow a whole domain
+AUTH_ALLOWED_EMAIL_DOMAINS=example.com
+
+# Both can be set simultaneously — either match grants access
+```
+
+With both empty, any authenticated Google account is let through.
+
+## CLI and MCP server
+
+CLI and MCP server authenticate directly with Langfuse using their own keys — they are **not affected** by web app auth settings.
+
+## Adding other providers
+
+Self-hosters can swap or add providers (GitHub, email magic link, credentials, etc.) by editing `apps/web/src/auth.ts`. Auth.js supports [80+ providers](https://authjs.dev/getting-started/authentication/oauth) out of the box.

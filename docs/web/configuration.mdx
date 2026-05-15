@@ -1,0 +1,49 @@
+---
+title: Configuration
+description: Environment variables for the PromptFlow web app.
+---
+
+All configuration is done via environment variables in `apps/web/.env.local`. Copy the example file to get started:
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+```
+
+If a required key is missing, the app renders a graceful "not configured" state rather than crashing.
+
+## Langfuse
+
+| Variable | Required | Description |
+|---|---|---|
+| `LANGFUSE_PUBLIC_KEY` | Yes | Your Langfuse project public key (`pk-lf-…`) |
+| `LANGFUSE_SECRET_KEY` | Yes | Your Langfuse project secret key (`sk-lf-…`) |
+| `LANGFUSE_HOST` | No | Defaults to `https://cloud.langfuse.com`. Override for self-hosted Langfuse. |
+
+Find your keys in the Langfuse project settings under **API Keys**.
+
+## Playground
+
+The Playground streams model responses. You need at least one of the following:
+
+| Variable | Description |
+|---|---|
+| `OPENROUTER_API_KEY` | Routes requests through [OpenRouter](https://openrouter.ai). Supports 300+ models. |
+| `AI_GATEWAY_API_KEY` | Experimental: routes through Vercel AI SDK + AI Gateway instead of OpenRouter. Takes priority if both are set. Also emits real-time traces to Langfuse via `@langfuse/otel`. |
+
+<Note>
+  If neither key is set, the Playground is disabled. The rest of the app — prompt list, editor, version history — works without them.
+</Note>
+
+## Authentication
+
+Authentication is **disabled by default** — all three vars below must be set together to enable it. Any subset results in open access (fail-open by design, so a typo doesn't brick your deployment).
+
+| Variable | Description |
+|---|---|
+| `AUTH_SECRET` | Random secret for JWT signing. Generate with `bunx auth secret`. |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID. |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret. |
+| `AUTH_ALLOWED_EMAILS` | Optional comma-separated allowlist of email addresses. |
+| `AUTH_ALLOWED_EMAIL_DOMAINS` | Optional comma-separated allowlist of domains (e.g. `example.com`). |
+
+See [Authentication](/web/authentication) for the full setup walkthrough.

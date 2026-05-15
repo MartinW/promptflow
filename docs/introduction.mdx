@@ -1,0 +1,58 @@
+---
+title: Introduction
+description: A better UI for Langfuse prompt management.
+---
+
+PromptFlow is an open-core frontend for the prompt-management half of [Langfuse](https://langfuse.com), built for authoring and iteration. Langfuse handles storage; PromptFlow handles the editor experience: tag-first organisation, an integrated playground, and a CLI + MCP server so prompts are accessible everywhere.
+
+## Ecosystem
+
+One Langfuse-backed prompt registry, multiple ways to interact with it:
+
+<CardGroup cols={2}>
+  <Card title="Web App" icon="browser" href="/quickstart">
+    Full authoring UI with tag filtering, version history, inline diff, and a streaming Playground. Runs on Next.js.
+  </Card>
+  <Card title="CLI" icon="terminal" href="/cli/overview">
+    `list`, `get`, `pull`, `push`, `run`, `diff` — manage prompts from the terminal and round-trip JSON edits.
+  </Card>
+  <Card title="MCP Server" icon="server" href="/mcp-server/overview">
+    Register with Claude Desktop, Claude Code, or Cursor. Your prompts become first-class MCP Prompts the host LLM can invoke by name.
+  </Card>
+  <Card title="Cadence (iOS)" icon="mobile" href="https://github.com/MartinW/cadence">
+    Reads `voice:*` tagged prompts aloud via streamed audio. Demonstrates remote prompt management — edit in PromptFlow, behaviour changes in the app on next launch.
+  </Card>
+</CardGroup>
+
+## How it fits together
+
+```
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│  apps/web        │  │  apps/cli        │  │  apps/mcp-server │
+│  (Next.js)       │  │  (Commander)     │  │  (MCP stdio)     │
+│  Authoring UI    │  │  Terminal CRUD   │  │  Prompts as MCP  │
+│  + Playground    │  │  + run via OR    │  │  prompts/tools   │
+└────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘
+         └────────────────────┬┴──────────────────────┘
+                              │
+              ┌───────────────▼──────────────┐
+              │  packages/core               │
+              │  Typed Langfuse client,      │
+              │  tag utilities, validators   │
+              └───────────────┬──────────────┘
+                              │ HTTPS
+                              ▼
+                   ┌──────────────────┐
+                   │  Langfuse API    │
+                   │  (BYO keys)      │
+                   └──────────────────┘
+```
+
+The CLI and MCP server call Langfuse directly with their own credentials — they are unaffected by any web app authentication you configure.
+
+## License
+
+- **Root / CLI / MCP server / core** — MIT.
+- **`ee/` directory and `@promptflow/ee-*` packages** — Business Source License 1.1, converting to Apache 2.0 after 4 years. Source-available; can't be used commercially without a licence.
+
+This mirrors the [Langfuse open-core model](https://langfuse.com/license).

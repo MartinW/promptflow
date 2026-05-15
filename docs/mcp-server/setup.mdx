@@ -1,0 +1,83 @@
+---
+title: Setup
+description: Register the MCP server with Claude Desktop, Claude Code, or Cursor.
+---
+
+You don't install the MCP server directly — you register it with your MCP client and let `npx` pull it on demand (once the package is published).
+
+<Note>
+  Until the npm package is published, follow the [Build from source](#build-from-source) steps and point your client at the local bundle.
+</Note>
+
+## Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
+
+```json
+{
+  "mcpServers": {
+    "promptflow": {
+      "command": "npx",
+      "args": ["-y", "@promptflow/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-...",
+        "LANGFUSE_HOST": "https://cloud.langfuse.com"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop to apply. See [Tools](/mcp-server/tools) for optional environment variables like `PROMPTFLOW_TAG_FILTER` and `OPENROUTER_API_KEY`.
+
+## Claude Code
+
+```bash
+claude mcp add promptflow npx -y @promptflow/mcp-server \
+  -e LANGFUSE_PUBLIC_KEY=pk-lf-... \
+  -e LANGFUSE_SECRET_KEY=sk-lf-... \
+  -e LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+## Cursor
+
+Edit `~/.cursor/mcp.json` — same structure as Claude Desktop, under `mcpServers`.
+
+## Build from source
+
+While the npm package is unpublished:
+
+```bash
+git clone https://github.com/MartinW/promptflow.git
+cd promptflow
+bun install
+bunx turbo run build --filter=mcp-server
+```
+
+Then replace the `npx` invocation in your client config with the absolute path to the built bundle.
+
+**Claude Desktop example:**
+
+```json
+{
+  "mcpServers": {
+    "promptflow": {
+      "command": "node",
+      "args": ["/absolute/path/to/promptflow/apps/mcp-server/dist/index.js"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-..."
+      }
+    }
+  }
+}
+```
+
+**Claude Code example:**
+
+```bash
+claude mcp add promptflow node /absolute/path/to/promptflow/apps/mcp-server/dist/index.js \
+  -e LANGFUSE_PUBLIC_KEY=pk-lf-... \
+  -e LANGFUSE_SECRET_KEY=sk-lf-...
+```

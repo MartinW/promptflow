@@ -1,0 +1,48 @@
+---
+title: MCP Server Overview
+description: Expose your Langfuse prompts as MCP Prompts to Claude, Cursor, and other LLM clients.
+---
+
+`@promptflow/mcp-server` is a [Model Context Protocol](https://modelcontextprotocol.io) server that bridges your Langfuse prompt registry and any MCP-aware LLM client.
+
+When registered, every prompt in your registry becomes a first-class **MCP Prompt** the host LLM can invoke by name — without any additional wiring.
+
+<Note>
+  The package is built and tested against Claude Code but not yet published to npm. See [Setup](/mcp-server/setup) for instructions on running from a local build.
+</Note>
+
+## How it works
+
+The server runs as a stdio process that your MCP client manages. On startup it fetches all accessible prompts from Langfuse and keeps them in an in-memory cache with stale-while-revalidate refresh.
+
+### MCP Prompts
+
+Every Langfuse prompt is exposed as an MCP Prompt with auto-discovered arguments (variables extracted from the template). In the host LLM, you can say:
+
+> "Use the `support-reply` prompt with name=Alice and tier=pro."
+
+The server resolves the prompt, substitutes variables, and returns the rendered messages.
+
+Three name variants are supported:
+
+| Syntax | Resolves to |
+|---|---|
+| `support-reply` | Configured default label (`latest` unless overridden) |
+| `support-reply@v3` | Specific version |
+| `support-reply#staging` | Specific label |
+
+`config.defaults` from PromptFlow's compose editor pre-populates variables; caller-supplied arguments override them.
+
+### Tools
+
+In addition to MCP Prompts, the server exposes tools for programmatic access. See [Tools](/mcp-server/tools) for the full reference.
+
+## Scoping prompts
+
+Use `PROMPTFLOW_TAG_FILTER` to narrow which prompts the LLM sees:
+
+```bash
+PROMPTFLOW_TAG_FILTER=app:cadence
+```
+
+This applies AND semantics — only prompts carrying all the specified tags (comma-separated) are exposed. Useful for multi-tenant setups where different MCP registrations serve different apps.
