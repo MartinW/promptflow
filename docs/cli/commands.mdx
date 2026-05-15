@@ -1,0 +1,153 @@
+---
+title: Command Reference
+description: Full reference for all promptflow CLI commands.
+---
+
+## prompts list
+
+List prompts in your registry, with optional tag filtering.
+
+```bash
+promptflow prompts list [--tag <tags>] [--limit <n>] [--json]
+```
+
+| Flag | Description |
+|---|---|
+| `--tag <tags>` | Comma-separated tag filter (AND semantics). E.g. `voice:greeting,lang:en-GB` returns prompts that carry **both** tags. |
+| `--limit <n>` | Maximum number of results (default: 20). |
+| `--json` | Output as JSON instead of a formatted table. |
+
+```bash
+# List all prompts
+promptflow prompts list
+
+# Filter by tags
+promptflow prompts list --tag voice:greeting,lang:en-GB
+
+# Machine-readable output
+promptflow prompts list --json
+```
+
+---
+
+## prompts get
+
+Fetch a specific prompt by name.
+
+```bash
+promptflow prompts get <name> [-v <version>] [-l <label>] [--json]
+```
+
+| Flag | Description |
+|---|---|
+| `-v <version>` | Pin to a specific version number. |
+| `-l <label>` | Pin to a label (`production`, `staging`, `latest`). |
+| `--json` | Output raw JSON. |
+
+```bash
+promptflow prompts get support-reply
+promptflow prompts get support-reply -v 3
+promptflow prompts get support-reply -l production
+```
+
+---
+
+## prompts pull
+
+Download a prompt to a local JSON file for editing.
+
+```bash
+promptflow prompts pull <name> [-o <file>]
+```
+
+| Flag | Description |
+|---|---|
+| `-o <file>` | Output file path. Defaults to `<name>.json`. |
+
+```bash
+promptflow prompts pull support-reply
+promptflow prompts pull support-reply -o ./prompts/support-reply.json
+```
+
+---
+
+## prompts push
+
+Push a local JSON file back as a new prompt version.
+
+```bash
+promptflow prompts push <file> [--name <override>] [--commit <message>] [--promote]
+```
+
+| Flag | Description |
+|---|---|
+| `--name <override>` | Override the prompt name from the file. |
+| `--commit <message>` | Commit message for the new version. |
+| `--promote` | Mark the new version as `production`. |
+
+```bash
+promptflow prompts push ./support-reply.json --commit "tighten tone"
+promptflow prompts push ./support-reply.json --promote
+```
+
+`pull` and `push` round-trip: pull to JSON, edit the content, push back as a new version.
+
+---
+
+## prompts run
+
+Execute a prompt via OpenRouter and stream the response.
+
+```bash
+promptflow prompts run <name> -m <model> [--vars key=value ...]
+```
+
+| Flag | Description |
+|---|---|
+| `-m <model>` | Model identifier (OpenRouter format, e.g. `anthropic/claude-3.5-haiku`). |
+| `--vars key=value` | Variable substitutions. Pass multiple `--vars` flags or space-separated pairs. |
+
+```bash
+promptflow prompts run support-reply \
+  -m anthropic/claude-3.5-haiku \
+  --vars name=Alice tier=pro
+```
+
+The response streams to **stdout**. A latency / token / cost summary is printed to **stderr** at the end, so you can pipe the response cleanly:
+
+```bash
+promptflow prompts run summarise -m openai/gpt-4o --vars text="..." > summary.txt
+```
+
+Requires `OPENROUTER_API_KEY` in your environment or saved config.
+
+---
+
+## prompts diff
+
+Show the diff between two versions of a prompt.
+
+```bash
+promptflow prompts diff <name> <v1> <v2>
+```
+
+```bash
+promptflow prompts diff support-reply 2 3
+```
+
+---
+
+## auth
+
+Manage saved credentials in `~/.promptflow/config.json`.
+
+```bash
+# Save credentials
+promptflow auth \
+  --public-key pk-lf-... \
+  --secret-key sk-lf-... \
+  --openrouter-key sk-or-...
+
+# Print current saved config
+promptflow auth
+```

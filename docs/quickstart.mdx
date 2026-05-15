@@ -1,0 +1,66 @@
+---
+title: Quickstart
+description: Run the PromptFlow web app locally in under five minutes.
+---
+
+## Prerequisites
+
+- [Bun](https://bun.sh) ≥ 1.1
+- Node ≥ 20
+- A [Langfuse](https://langfuse.com) project (free tier works)
+
+## 1. Clone and install
+
+```bash
+git clone https://github.com/MartinW/promptflow.git
+cd promptflow
+bun install
+```
+
+## 2. Configure environment variables
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+```
+
+Open `apps/web/.env.local` and fill in your Langfuse keys at minimum:
+
+```bash
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+```
+
+All other variables are optional. See [Configuration](/web/configuration) for the full reference.
+
+<Tip>
+  To use the Playground (streaming model runs), also add `OPENROUTER_API_KEY` or `AI_GATEWAY_API_KEY`.
+</Tip>
+
+## 3. Start the dev server
+
+```bash
+bun run dev
+```
+
+The web app starts at **http://localhost:3003**. No sign-in is required by default — the app is open to anyone who can reach the URL.
+
+<Warning>
+  If you expose this on a public URL without configuring authentication, anyone who finds it can read your Langfuse prompts and consume your OpenRouter quota. See [Authentication](/web/authentication) to gate access.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Configure environment" icon="gear" href="/web/configuration">
+    Full reference for all environment variables, including optional Playground and auth settings.
+  </Card>
+  <Card title="Set up authentication" icon="lock" href="/web/authentication">
+    Enable Google sign-in and restrict access by email or domain.
+  </Card>
+  <Card title="Install the CLI" icon="terminal" href="/cli/overview">
+    Manage prompts from the terminal and author via round-trip JSON.
+  </Card>
+  <Card title="Add the MCP server" icon="server" href="/mcp-server/setup">
+    Register with Claude Desktop, Claude Code, or Cursor.
+  </Card>
+</CardGroup>
