@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   );
 
   registerPromptHandlers(server, cache, logger);
-  registerToolHandlers(server, cache, config, logger);
+  registerToolHandlers(server, cache, config, logger, client);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

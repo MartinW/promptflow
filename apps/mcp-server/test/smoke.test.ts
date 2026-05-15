@@ -1,5 +1,5 @@
-import type { Prompt, PromptMeta } from "@promptflow/core";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Prompt, PromptFlowClient, PromptMeta } from "@promptflow/core";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PromptCache } from "../src/cache";
 import { loadConfig, type ServerConfig } from "../src/config";
 import { buildTools } from "../src/handlers/tools";
@@ -15,6 +15,19 @@ function makeCache(prompts: PromptMeta[] = [], get?: (name: string) => Prompt): 
     },
     refresh() {},
   } as unknown as PromptCache;
+}
+
+function makeClient(overrides: Partial<PromptFlowClient> = {}): PromptFlowClient {
+  return {
+    listPrompts: vi.fn(async () => []),
+    getPrompt: vi.fn(async () => { throw new Error("not implemented"); }),
+    getPromptByTag: vi.fn(async () => null),
+    listByFilter: vi.fn(async () => []),
+    getProjectName: vi.fn(async () => null),
+    createPrompt: vi.fn(async (input) => ({ ...input, version: 1, labels: input.labels ?? [], commitMessage: null }) as Prompt),
+    deletePrompt: vi.fn(async () => {}),
+    ...overrides,
+  };
 }
 
 function makeConfig(overrides: Partial<ServerConfig> = {}): ServerConfig {
@@ -33,28 +46,31 @@ function makeConfig(overrides: Partial<ServerConfig> = {}): ServerConfig {
 
 describe("MCP smoke", () => {
   describe("tool registration", () => {
-    it("exposes the five base tools when OpenRouter is not configured", () => {
-      const tools = buildTools(makeCache(), makeConfig());
+    it("always exposes run_prompt regardless of OpenRouter config", () => {
+      const tools = buildTools(makeCache(), makeConfig(), makeClient());
       const names = tools.map((t) => t.name).sort();
       expect(names).toEqual([
+        "create_prompt",
+        "diff_prompts",
         "get_prompt_metadata",
         "list_prompts",
         "refresh_prompts",
         "render_prompt",
+        "run_prompt",
         "search_prompts",
       ]);
     });
 
-    it("adds run_prompt only when OPENROUTER_API_KEY is set", () => {
-      const without = buildTools(makeCache(), makeConfig());
-      expect(without.map((t) => t.name)).not.toContain("run_prompt");
-
-      const withKey = buildTools(makeCache(), makeConfig({ openrouterApiKey: "sk-or-test" }));
-      expect(withKey.map((t) => t.name)).toContain("run_prompt");
+    it("run_prompt returns a helpful error when no API key is configured", async () => {
+      const tools = buildTools(makeCache(), makeConfig(), makeClient());
+      const runPrompt = tools.find((t) => t.name === "run_prompt")!;
+      const result = await runPrompt.handler({ name: "test" });
+      expect(result.isError).toBe(true);
+      expect((result.content[0] as { text: string }).text).toContain("OPENROUTER_API_KEY");
     });
 
     it("declares an MCP-compliant inputSchema on every tool", () => {
-      const tools = buildTools(makeCache(), makeConfig({ openrouterApiKey: "sk-or-test" }));
+      const tools = buildTools(makeCache(), makeConfig({ openrouterApiKey: "sk-or-test" }), makeClient());
       for (const tool of tools) {
         expect(tool.inputSchema, `tool "${tool.name}" inputSchema`).toMatchObject({
           type: "object",
@@ -74,7 +90,7 @@ describe("MCP smoke", () => {
       {
         name: "alpha",
         versions: [1],
-        tags: ["voice:greeting", "env:prod"],
+        tags: ["voice:greeting", "lang:en-GB"],
         labels: ["production"],
         lastUpdatedAt: "2025-01-01T00:00:00Z",
       },
@@ -88,7 +104,7 @@ describe("MCP smoke", () => {
     ];
 
     it("returns the full list with no filter", async () => {
-      const [listPrompts] = buildTools(makeCache(prompts), makeConfig());
+      const [listPrompts] = buildTools(makeCache(prompts), makeConfig(), makeClient());
       const result = await listPrompts.handler({});
       const text = (result.content[0] as { text: string }).text;
       const payload = JSON.parse(text) as { data: { name: string }[] };
@@ -96,9 +112,9 @@ describe("MCP smoke", () => {
     });
 
     it("applies a comma-separated AND tag filter via @promptflow/core", async () => {
-      const [listPrompts] = buildTools(makeCache(prompts), makeConfig());
+      const [listPrompts] = buildTools(makeCache(prompts), makeConfig(), makeClient());
       const result = await listPrompts.handler({
-        tag_filter: "voice:greeting,env:prod",
+        tag_filter: "voice:greeting,lang:en-GB",
       });
       const text = (result.content[0] as { text: string }).text;
       const payload = JSON.parse(text) as { data: { name: string }[] };

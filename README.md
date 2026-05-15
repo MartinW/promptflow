@@ -138,7 +138,6 @@ PromptFlow layers conventions on Langfuse's plain-string tags. Encoded as consta
 | `eval:` | LLM-as-judge templates | `eval:helpfulness` |
 | `app:` | Scope to a consumer app | `app:cadence:greeting` |
 | `lang:` | Locale | `lang:en-GB` |
-| `env:` | Deployment scope | `env:prod`, `env:staging` |
 
 Tags compose: a single prompt may carry several namespaced tags, and consumers filter by AND.
 

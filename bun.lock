@@ -41,9 +41,11 @@
       "dependencies": {
         "@modelcontextprotocol/sdk": "^1.0.4",
         "@promptflow/core": "workspace:*",
+        "diff": "^9.0.0",
         "fuse.js": "^7.0.0",
       },
       "devDependencies": {
+        "@types/diff": "^8.0.0",
         "@types/node": "^20",
         "tsup": "^8.3.5",
         "tsx": "^4.19.2",

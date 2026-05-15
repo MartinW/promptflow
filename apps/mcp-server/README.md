@@ -26,7 +26,7 @@ You don't usually install this directly — register it with your MCP client and
         "LANGFUSE_HOST": "https://cloud.langfuse.com",
 
         "// optional —": "narrow which prompts the LLM sees",
-        "PROMPTFLOW_TAG_FILTER": "env:prod",
+        "PROMPTFLOW_TAG_FILTER": "voice:greeting",
 
         "// optional —": "enables the run_prompt tool",
         "OPENROUTER_API_KEY": "sk-or-..."
