@@ -2,7 +2,7 @@ import { isPlaceholder, renderPrompt, type Prompt } from "@promptflow/core";
 import { pickProvider, streamViaVercel } from "@/lib/aiprovider";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
 import { langfuseSpanProcessor } from "@/instrumentation";
-import { startObservation, type LangfuseGenerationAttributes } from "@langfuse/tracing";
+import { startObservation, LangfuseOtelSpanAttributes, type LangfuseGenerationAttributes } from "@langfuse/tracing";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +111,7 @@ export async function POST(req: Request): Promise<Response> {
   const gen = isLangfuseConfigured()
     ? startObservation("playground", genAttrs, { asType: "generation" as const })
     : null;
+  gen?.otelSpan.setAttribute(LangfuseOtelSpanAttributes.TRACE_TAGS, JSON.stringify(["playground", "openrouter"]));
 
   const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -194,7 +195,11 @@ export async function POST(req: Request): Promise<Response> {
               usageDetails: {
                 input: lastUsage.prompt_tokens ?? 0,
                 output: lastUsage.completion_tokens ?? 0,
+                total: lastUsage.total_tokens ?? 0,
               },
+              ...(lastUsage.cost !== undefined && {
+                costDetails: { total: lastUsage.cost },
+              }),
             }),
           });
           gen.end();
