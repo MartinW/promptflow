@@ -15,7 +15,7 @@
 import { Langfuse } from "langfuse";
 import { wrapError } from "./errors";
 import { matchesFilter } from "./tags";
-import type { CreatePromptInput, ListPromptsFilter, Prompt, PromptMeta } from "./types";
+import type { CreatePromptInput, ListPromptsFilter, Prompt, PromptMeta, PromptObservation } from "./types";
 
 export interface ClientConfig {
   publicKey: string;
@@ -71,6 +71,13 @@ export interface PromptFlowClient {
    * the langfuse-js SDK doesn't surface this endpoint yet.
    */
   deletePrompt(name: string, opts?: { version?: number; label?: string }): Promise<void>;
+
+  /**
+   * Return the most recent generation observations that used this prompt.
+   * Requires that the caller's application instruments traces with the
+   * Langfuse SDK and links them to the prompt by name.
+   */
+  getPromptObservations(name: string, opts?: { limit?: number }): Promise<PromptObservation[]>;
 }
 
 export function createClient(config: ClientConfig): PromptFlowClient {
@@ -160,6 +167,60 @@ export function createClient(config: ClientConfig): PromptFlowClient {
           input as unknown as Parameters<typeof sdk.api.promptsCreate>[0],
         );
         return result as unknown as Prompt;
+      } catch (err) {
+        throw wrapError(err);
+      }
+    },
+
+    async getPromptObservations(name, opts = {}): Promise<PromptObservation[]> {
+      const limit = opts.limit ?? 20;
+      const filter = JSON.stringify([
+        { type: "string", column: "promptName", operator: "=", value: name },
+        { type: "string", column: "type", operator: "=", value: "GENERATION" },
+      ]);
+      const url = new URL("/api/public/v2/observations", baseUrl);
+      url.searchParams.set("fields", "core,usage,prompt,metrics,model");
+      url.searchParams.set("limit", String(limit));
+      url.searchParams.set("filter", filter);
+
+      let response: Response;
+      try {
+        response = await fetch(url, { headers: { Authorization: basicAuth } });
+      } catch (err) {
+        throw wrapError(err);
+      }
+      if (!response.ok) throw wrapError(response);
+      try {
+        const data = await response.json();
+        const rows = (data.data ?? []) as Record<string, unknown>[];
+        return rows.map((obs) => {
+          const usage = obs.usageDetails as Record<string, number> | null | undefined;
+          // Langfuse may key this as providedModelName (schema name) or model (column alias)
+          const model =
+            (obs.providedModelName as string | null | undefined) ??
+            (obs.model as string | null | undefined) ??
+            null;
+          // Cache-read tokens arrive under several key names depending on provider
+          // and Langfuse SDK version. Check all known variants.
+          const cachedTokens =
+            usage?.inputCacheRead ??
+            usage?.cache_read_input_tokens ??
+            usage?.cacheReadInputTokens ??
+            null;
+          return {
+            id: obs.id as string,
+            traceId: obs.traceId as string,
+            startTime: obs.startTime as string,
+            endTime: (obs.endTime as string | null) ?? null,
+            latency: (obs.latency as number | null) ?? null,
+            model,
+            promptVersion: (obs.promptVersion as number | null) ?? null,
+            inputTokens: usage?.input ?? null,
+            outputTokens: usage?.output ?? null,
+            cachedTokens,
+            totalCost: (obs.totalCost as number | null) ?? null,
+          };
+        });
       } catch (err) {
         throw wrapError(err);
       }
