@@ -1,4 +1,4 @@
-import { extractVariables, isPlaceholder, type Prompt, PromptFlowError } from "@promptflow/core";
+import { extractVariables, isPlaceholder, type Prompt, type PromptObservation, PromptFlowError } from "@promptflow/core";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DiffViewer } from "@/components/diff-viewer";
@@ -47,7 +47,10 @@ export default async function PromptDetailPage({
     return <ErrorView name={name} error={err} />;
   }
 
-  const allVersions = await loadAllVersions(name).catch(() => null);
+  const [allVersions, callHistory] = await Promise.all([
+    loadAllVersions(name).catch(() => null),
+    loadCallHistory(name).catch(() => null),
+  ]);
   const versions = allVersions?.versions ?? [prompt.version];
   const aggregateLabels = allVersions?.labels ?? prompt.labels;
   const hasProductionLabel = aggregateLabels.includes("production");
@@ -193,6 +196,8 @@ export default async function PromptDetailPage({
         </aside>
       </div>
 
+      <CallHistorySection observations={callHistory} />
+
       <section className="mt-12 pt-6 border-t border-border">
         <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Danger zone</h2>
         <Card className="p-4 flex items-center justify-between gap-4 border-red-500/20">
@@ -261,6 +266,88 @@ function ErrorView({ name, error }: { name: string; error: unknown }) {
       </Card>
     </main>
   );
+}
+
+function CallHistorySection({ observations }: { observations: PromptObservation[] | null }) {
+  if (!observations) return null;
+
+  return (
+    <section className="mt-12 pt-6 border-t border-border">
+      <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Call history</h2>
+      {observations.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No generations linked to this prompt yet. Instrument your app with the Langfuse SDK and
+          pass the prompt name to start seeing calls here.
+        </p>
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                    Time
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                    Version
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                    Model
+                  </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+                    Latency
+                  </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+                    Tokens (in / out)
+                  </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+                    Cached
+                  </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+                    Cost
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {observations.map((obs) => (
+                  <tr key={obs.id} className="hover:bg-muted/20">
+                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(obs.startTime).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2 font-mono text-xs">
+                      {obs.promptVersion != null ? `v${obs.promptVersion}` : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-xs text-muted-foreground truncate max-w-[160px]">
+                      {obs.model ?? "—"}
+                    </td>
+                    <td className="px-4 py-2 text-xs text-right tabular-nums">
+                      {obs.latency != null ? `${(obs.latency * 1000).toFixed(0)} ms` : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-xs text-right tabular-nums text-muted-foreground">
+                      {obs.inputTokens != null || obs.outputTokens != null
+                        ? `${obs.inputTokens ?? 0} / ${obs.outputTokens ?? 0}`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-xs text-right tabular-nums text-muted-foreground">
+                      {obs.cachedTokens != null ? obs.cachedTokens : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-xs text-right tabular-nums text-muted-foreground">
+                      {obs.totalCost != null ? `$${obs.totalCost.toFixed(4)}` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+    </section>
+  );
+}
+
+async function loadCallHistory(name: string): Promise<PromptObservation[]> {
+  const client = getServerClient();
+  return client.getPromptObservations(name, { limit: 20 });
 }
 
 /**
