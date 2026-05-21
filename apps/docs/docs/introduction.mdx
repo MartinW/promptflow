@@ -12,7 +12,7 @@ One Langfuse-backed prompt registry, multiple ways to interact with it:
 
 <CardGroup cols={2}>
   <Card title="Web App" icon="browser" href="/quickstart">
-    Full authoring UI with tag filtering, version history, inline diff, and a streaming Playground. Runs on Next.js.
+    Full authoring UI with tag filtering, version history, inline diff, rename/delete, and a streaming Playground (OpenRouter or Vercel AI Gateway). Runs on Next.js.
   </Card>
   <Card title="CLI" icon="terminal" href="/cli/overview">
     `list`, `get`, `pull`, `push`, `run`, `diff` — manage prompts from the terminal and round-trip JSON edits.
@@ -33,6 +33,7 @@ One Langfuse-backed prompt registry, multiple ways to interact with it:
 │  (Next.js)       │  │  (Commander)     │  │  (MCP stdio)     │
 │  Authoring UI    │  │  Terminal CRUD   │  │  Prompts as MCP  │
 │  + Playground    │  │  + run via OR    │  │  prompts/tools   │
+│  (OR / AI GW)    │  │                  │  │                  │
 └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘
          └────────────────────┬┴──────────────────────┘
                               │

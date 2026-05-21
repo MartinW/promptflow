@@ -13,7 +13,7 @@ promptflow prompts list [--tag <tags>] [--limit <n>] [--json]
 
 | Flag | Description |
 |---|---|
-| `--tag <tags>` | Comma-separated tag filter (AND semantics). E.g. `voice:greeting,lang:en-GB` returns prompts that carry **both** tags. |
+| `--tag <tags>` | Comma-separated tag filter (AND semantics). E.g. `voice,env:prod` returns prompts that carry **both** tags. |
 | `--limit <n>` | Maximum number of results (default: 20). |
 | `--json` | Output as JSON instead of a formatted table. |
 
@@ -22,7 +22,7 @@ promptflow prompts list [--tag <tags>] [--limit <n>] [--json]
 promptflow prompts list
 
 # Filter by tags
-promptflow prompts list --tag voice:greeting,lang:en-GB
+promptflow prompts list --tag voice,env:prod
 
 # Machine-readable output
 promptflow prompts list --json
