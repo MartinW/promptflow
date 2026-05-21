@@ -41,6 +41,7 @@ export type {
   ListPromptsFilter,
   Prompt,
   PromptMeta,
+  PromptObservation,
   TextPrompt,
 } from "./types";
 export { isChatMessage, isPlaceholder } from "./types";

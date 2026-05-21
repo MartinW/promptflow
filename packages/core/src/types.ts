@@ -102,3 +102,17 @@ export interface CreateChatPromptInput {
 }
 
 export type CreatePromptInput = CreateTextPromptInput | CreateChatPromptInput;
+
+export interface PromptObservation {
+  id: string;
+  traceId: string;
+  startTime: string;
+  endTime: string | null;
+  latency: number | null;
+  model: string | null;
+  promptVersion: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cachedTokens: number | null;
+  totalCost: number | null;
+}

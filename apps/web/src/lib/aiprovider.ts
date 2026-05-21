@@ -1,6 +1,7 @@
 import "server-only";
 import { gateway, type ModelMessage, streamText } from "ai";
 import { langfuseSpanProcessor } from "@/instrumentation";
+import type { Prompt } from "@promptflow/core";
 
 export type Provider = "vercel" | "openrouter";
 
@@ -13,8 +14,7 @@ export function pickProvider(): Provider | null {
 export interface VercelStreamOptions {
   messages: { role: string; content: string }[];
   model: string;
-  promptName: string;
-  promptVersion?: number;
+  prompt: Prompt;
 }
 
 interface DoneUsage {
@@ -51,9 +51,10 @@ export function streamViaVercel(opts: VercelStreamOptions): ReadableStream<Uint8
             isEnabled: true,
             functionId: "playground",
             metadata: {
-              promptName: opts.promptName,
-              promptVersion: opts.promptVersion ?? "latest",
-              tags: ["playground", "vercel-experiment"],
+              // langfusePrompt (JSON-serialised) is the key the Langfuse OTLP
+              // ingestion uses to link this generation to the prompt version.
+              langfusePrompt: JSON.stringify({ name: opts.prompt.name, version: opts.prompt.version }),
+              tags: ["playground", "vercel-gateway"],
             },
           },
         });
