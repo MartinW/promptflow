@@ -30,9 +30,9 @@ The Playground streams model responses. You need at least one of the following:
 | `OPENROUTER_API_KEY` | Routes requests through [OpenRouter](https://openrouter.ai). Supports 300+ models. |
 | `AI_GATEWAY_API_KEY` | Experimental: routes through Vercel AI SDK + AI Gateway instead of OpenRouter. Takes priority if both are set. Also emits real-time traces to Langfuse via `@langfuse/otel`. |
 
-<Note>
-  If neither key is set, the Playground is disabled. The rest of the app — prompt list, editor, version history — works without them.
-</Note>
+:::note
+If neither key is set, the Playground is disabled. The rest of the app — prompt list, editor, version history — works without them.
+:::
 
 ## Authentication
 

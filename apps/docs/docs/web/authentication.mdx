@@ -7,9 +7,9 @@ description: Optionally gate the web app with Google sign-in.
 
 By default the app is completely open — no sign-in required. This is intentional for local development and private-network deployments.
 
-<Warning>
-  **If you deploy on a public URL without auth, anyone who finds it can read your Langfuse prompts and burn through your OpenRouter / AI Gateway quota.** Either enable auth below, put the app behind a VPN or Cloudflare Access, or both. There is no built-in rate-limiting.
-</Warning>
+:::warning
+**If you deploy on a public URL without auth, anyone who finds it can read your Langfuse prompts and burn through your OpenRouter / AI Gateway quota.** Either enable auth below, put the app behind a VPN or Cloudflare Access, or both. There is no built-in rate-limiting.
+:::
 
 ## Enabling Google sign-in
 

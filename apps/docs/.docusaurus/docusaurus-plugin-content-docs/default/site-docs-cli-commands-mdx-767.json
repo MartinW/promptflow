@@ -1,0 +1,26 @@
+{
+  "id": "cli/commands",
+  "title": "Command Reference",
+  "description": "Full reference for all promptflow CLI commands.",
+  "source": "@site/docs/cli/commands.mdx",
+  "sourceDirName": "cli",
+  "slug": "/cli/commands",
+  "permalink": "/cli/commands",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Command Reference",
+    "description": "Full reference for all promptflow CLI commands."
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "CLI Overview",
+    "permalink": "/cli/overview"
+  },
+  "next": {
+    "title": "MCP Server Overview",
+    "permalink": "/mcp-server/overview"
+  }
+}

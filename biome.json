@@ -17,7 +17,8 @@
       "!**/dist",
       "!**/.turbo",
       "!**/build",
-      "!**/coverage"
+      "!**/coverage",
+      "!apps/docs/**"
     ]
   },
   "formatter": {

@@ -1,0 +1,26 @@
+{
+  "id": "mcp-server/tools",
+  "title": "Tools & Configuration",
+  "description": "MCP tools exposed by the server and all configuration variables.",
+  "source": "@site/docs/mcp-server/tools.mdx",
+  "sourceDirName": "mcp-server",
+  "slug": "/mcp-server/tools",
+  "permalink": "/mcp-server/tools",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Tools & Configuration",
+    "description": "MCP tools exposed by the server and all configuration variables."
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Setup",
+    "permalink": "/mcp-server/setup"
+  },
+  "next": {
+    "title": "Tag Conventions",
+    "permalink": "/concepts/tags"
+  }
+}

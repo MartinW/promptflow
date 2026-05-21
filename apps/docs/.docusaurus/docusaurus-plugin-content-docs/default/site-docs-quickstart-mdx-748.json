@@ -1,0 +1,26 @@
+{
+  "id": "quickstart",
+  "title": "Quickstart",
+  "description": "Run the PromptFlow web app locally in under five minutes.",
+  "source": "@site/docs/quickstart.mdx",
+  "sourceDirName": ".",
+  "slug": "/quickstart",
+  "permalink": "/quickstart",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Quickstart",
+    "description": "Run the PromptFlow web app locally in under five minutes."
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Introduction",
+    "permalink": "/"
+  },
+  "next": {
+    "title": "Configuration",
+    "permalink": "/web/configuration"
+  }
+}

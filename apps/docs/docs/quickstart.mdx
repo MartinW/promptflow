@@ -32,9 +32,9 @@ LANGFUSE_SECRET_KEY=sk-lf-...
 
 All other variables are optional. See [Configuration](/web/configuration) for the full reference.
 
-<Tip>
-  To use the Playground (streaming model runs), also add `OPENROUTER_API_KEY` or `AI_GATEWAY_API_KEY`.
-</Tip>
+:::tip
+To use the Playground (streaming model runs), also add `OPENROUTER_API_KEY` or `AI_GATEWAY_API_KEY`.
+:::
 
 ## 3. Start the dev server
 
@@ -44,9 +44,9 @@ bun run dev
 
 The web app starts at **http://localhost:3003**. No sign-in is required by default — the app is open to anyone who can reach the URL.
 
-<Warning>
-  If you expose this on a public URL without configuring authentication, anyone who finds it can read your Langfuse prompts and consume your OpenRouter quota. See [Authentication](/web/authentication) to gate access.
-</Warning>
+:::warning
+If you expose this on a public URL without configuring authentication, anyone who finds it can read your Langfuse prompts and consume your OpenRouter quota. See [Authentication](/web/authentication) to gate access.
+:::
 
 ## Next steps
 
