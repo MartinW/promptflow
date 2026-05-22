@@ -1,0 +1,18 @@
+---
+title: "Changelog"
+description: "What's new in PromptFlow."
+---
+
+<Update label="May 22, 2026" tags={["features", "updates"]}>
+
+## New features
+
+**Call history on prompt detail pages.** Every prompt now has a Call history section showing the last 20 generations that used it, with time, version, model, latency, tokens in/out, cached tokens, and cost. Useful for spot-checking how a prompt is performing in production without leaving PromptFlow. See [Web App configuration](/web/configuration).
+
+## Updates
+
+**Langfuse prompt linking in the Playground.** Playground runs now link back to the exact prompt version that produced them in Langfuse, for both the Vercel AI Gateway and OpenRouter providers. Open a trace in Langfuse and you'll see the prompt it came from.
+
+**Richer OpenRouter traces.** OpenRouter Playground runs now emit traces with `playground` and `openrouter` tags, total token counts, and cost — matching what the Vercel AI Gateway path already produced. See [Playground configuration](/web/configuration#playground).
+
+</Update>

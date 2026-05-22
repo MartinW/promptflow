@@ -11,6 +11,13 @@
   "navigation": {
     "anchors": [
       {
+        "anchor": "Changelog",
+        "icon": "list",
+        "pages": [
+          "changelog/overview"
+        ]
+      },
+      {
         "anchor": "Documentation",
         "icon": "book-open",
         "groups": [
