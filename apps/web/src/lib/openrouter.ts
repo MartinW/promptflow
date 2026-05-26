@@ -31,37 +31,82 @@ interface CacheEntry {
 }
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-let cache: CacheEntry | null = null;
+let openrouterCache: CacheEntry | null = null;
+let vercelCache: CacheEntry | null = null;
 
 /**
  * Fetch the OpenRouter model catalogue with a process-local 1h cache.
- *
- * Returns an empty list if the request fails — model picker shows a manual
- * input fallback so authors can paste any OpenRouter model id directly.
  */
 export async function listOpenRouterModels(): Promise<OpenRouterModel[]> {
-  if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
-    return cache.models;
+  if (openrouterCache && Date.now() - openrouterCache.fetchedAt < CACHE_TTL_MS) {
+    return openrouterCache.models;
   }
   try {
     const res = await fetch("https://openrouter.ai/api/v1/models", {
       next: { revalidate: 3600 },
     });
-    if (!res.ok) return cache?.models ?? [];
+    if (!res.ok) return openrouterCache?.models ?? [];
     const json = (await res.json()) as { data: OpenRouterModel[] };
-    cache = { fetchedAt: Date.now(), models: json.data ?? [] };
-    return cache.models;
+    openrouterCache = { fetchedAt: Date.now(), models: json.data ?? [] };
+    return openrouterCache.models;
   } catch {
-    return cache?.models ?? [];
+    return openrouterCache?.models ?? [];
   }
+}
+
+/**
+ * Fetch the Vercel AI Gateway model catalogue with a process-local 1h cache.
+ * The endpoint is public and requires no authentication.
+ * Field names differ from OpenRouter: context_window, pricing.input/output.
+ */
+export async function listVercelGatewayModels(): Promise<OpenRouterModel[]> {
+  if (vercelCache && Date.now() - vercelCache.fetchedAt < CACHE_TTL_MS) {
+    return vercelCache.models;
+  }
+  try {
+    const res = await fetch("https://ai-gateway.vercel.sh/v1/models", {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return vercelCache?.models ?? [];
+    const json = (await res.json()) as {
+      data: Array<{
+        id: string;
+        context_window?: number;
+        pricing?: { input?: string; output?: string };
+      }>;
+    };
+    const models: OpenRouterModel[] = (json.data ?? []).map((m) => ({
+      id: m.id,
+      name: m.id,
+      context_length: m.context_window ?? 0,
+      pricing: {
+        prompt: m.pricing?.input ?? "0",
+        completion: m.pricing?.output ?? "0",
+      },
+    }));
+    vercelCache = { fetchedAt: Date.now(), models };
+    return models;
+  } catch {
+    return vercelCache?.models ?? [];
+  }
+}
+
+/**
+ * Returns models from the active provider's catalogue.
+ * Uses Vercel AI Gateway when AI_GATEWAY_API_KEY is set, otherwise OpenRouter.
+ */
+export async function listModels(): Promise<OpenRouterModel[]> {
+  if (process.env.AI_GATEWAY_API_KEY) return listVercelGatewayModels();
+  return listOpenRouterModels();
 }
 
 export function isOpenRouterConfigured(): boolean {
   return Boolean(process.env.OPENROUTER_API_KEY);
 }
 
-/** Provider display names — slug → human-friendly. Falls through to slug if unmapped. */
+/** Provider display names — slug → human-friendly. Covers both OpenRouter and Vercel Gateway slugs. */
 const PROVIDER_LABELS: Record<string, string> = {
+  // OpenRouter slugs
   anthropic: "Anthropic",
   openai: "OpenAI",
   google: "Google",
@@ -76,23 +121,48 @@ const PROVIDER_LABELS: Record<string, string> = {
   nvidia: "NVIDIA",
   microsoft: "Microsoft",
   "01-ai": "01.AI",
+  // Vercel AI Gateway slugs (differ from OpenRouter in several cases)
+  xai: "xAI",
+  mistral: "Mistral",
+  meta: "Meta",
+  alibaba: "Alibaba",
+  deepinfra: "DeepInfra",
+  fireworks: "Fireworks",
+  groq: "Groq",
+  togetherai: "Together AI",
+  cerebras: "Cerebras",
+  sambanova: "SambaNova",
+  moonshotai: "Moonshot AI",
+  minimax: "MiniMax",
+  recraft: "Recraft",
+  bytedance: "ByteDance",
+  "arcee-ai": "Arcee AI",
+  nebius: "Nebius",
+  novita: "Novita",
+  vertex: "Google Vertex",
+  bedrock: "AWS Bedrock",
+  azure: "Azure",
+  xiaomi: "Xiaomi",
+  zai: "ZAI",
 };
 
-/** Provider slugs we want to surface above the others, in order. */
+/** Provider slugs surfaced above the others, in order. */
 const PROVIDER_PRIORITY = [
   "anthropic",
   "openai",
   "google",
   "meta-llama",
+  "meta",
   "mistralai",
+  "mistral",
   "deepseek",
   "x-ai",
+  "xai",
 ];
 
 /**
- * Convert OpenRouter's raw catalogue into provider-grouped, label-formatted
- * options for the picker. Empty-providers and clearly-unhealthy entries are
- * dropped; otherwise we show everything OpenRouter advertises.
+ * Convert a raw model catalogue into provider-grouped, label-formatted
+ * options for the picker.
  */
 export function groupModelsByProvider(models: OpenRouterModel[]): ModelGroup[] {
   const groups = new Map<string, ModelOption[]>();
@@ -141,7 +211,7 @@ function formatPricing(pricing: OpenRouterModel["pricing"]): string {
   // OpenRouter pricing is dollars per token as a string. Convert to $/M tokens.
   const promptPerM = parseFloat(pricing?.prompt ?? "0") * 1_000_000;
   const completionPerM = parseFloat(pricing?.completion ?? "0") * 1_000_000;
-  if (promptPerM === 0 && completionPerM === 0) return "Free";
+  if (promptPerM === 0 && completionPerM === 0) return "—";
   const fmt = (n: number) =>
     n >= 1
       ? `$${n.toFixed(0)}`

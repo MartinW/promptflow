@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { pickProvider } from "@/lib/aiprovider";
-import { groupModelsByProvider, listOpenRouterModels, type ModelGroup } from "@/lib/openrouter";
+import { groupModelsByProvider, listModels, type ModelGroup } from "@/lib/openrouter";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
 import { Playground, type PromptShape } from "./playground";
 
@@ -111,7 +111,7 @@ export default async function PlayPage({
   if (userContextDefault && variables.includes("user_context")) {
     initialValues.user_context = userContextDefault;
   }
-  const models = await listOpenRouterModels();
+  const models = await listModels();
   const modelGroups = models.length > 0 ? groupModelsByProvider(models) : FALLBACK_GROUPS;
 
   return (

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { filterModelGroups, usePreferredModels } from "@/components/preferred-models";
 import type { ModelGroup } from "@/lib/openrouter";
 
 export type PromptShape =
@@ -43,10 +44,26 @@ export function Playground({
   initialValues,
   modelGroups,
 }: Props) {
+  const { preferredIds, hasPreferences } = usePreferredModels();
+  const filteredModelGroups = useMemo(
+    () => filterModelGroups(modelGroups, preferredIds),
+    [modelGroups, preferredIds],
+  );
+
   const [varValues, setVarValues] = useState<Record<string, string>>(initialValues);
   const firstModelId =
     modelGroups.find((g) => g.models.length > 0)?.models[0]?.id ?? "openai/gpt-4o-mini";
   const [model, setModel] = useState<string>(firstModelId);
+
+  // Reset model selection when preferences change and current model is no longer visible.
+  useEffect(() => {
+    const visibleIds = new Set(filteredModelGroups.flatMap((g) => g.models.map((m) => m.id)));
+    if (visibleIds.size > 0 && !visibleIds.has(model)) {
+      const first = filteredModelGroups[0]?.models[0]?.id;
+      if (first) setModel(first);
+    }
+  }, [filteredModelGroups, model]);
+
   const [output, setOutput] = useState<string>("");
   const [running, setRunning] = useState(false);
   const [summary, setSummary] = useState<DoneEvent | null>(null);
@@ -208,7 +225,14 @@ export function Playground({
             ))
           )}
           <Separator />
-          <ModelPicker value={model} groups={modelGroups} disabled={running} onChange={setModel} />
+          <ModelPicker
+            value={model}
+            groups={filteredModelGroups}
+            totalCount={modelGroups.reduce((s, g) => s + g.models.length, 0)}
+            disabled={running}
+            onChange={setModel}
+            shortlistActive={hasPreferences}
+          />
           <div className="flex justify-end gap-2">
             {running ? (
               <Button variant="outline" onClick={cancel}>
@@ -297,16 +321,20 @@ function VariableInput({
 function ModelPicker({
   value,
   groups,
+  totalCount,
   disabled,
   onChange,
+  shortlistActive,
 }: {
   value: string;
   groups: ModelGroup[];
+  totalCount: number;
   disabled?: boolean;
   onChange: (next: string) => void;
+  shortlistActive?: boolean;
 }) {
   const id = "playground-model";
-  const totalCount = groups.reduce((sum, g) => sum + g.models.length, 0);
+  const visibleCount = groups.reduce((sum, g) => sum + g.models.length, 0);
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
@@ -314,7 +342,16 @@ function ModelPicker({
           Model
         </label>
         <span className="text-xs text-muted-foreground tabular-nums">
-          {totalCount} available · price is $/M tokens (in/out)
+          {shortlistActive ? (
+            <>
+              {visibleCount} of {totalCount} ·{" "}
+              <a href="/settings#models-heading" className="underline underline-offset-2 hover:text-foreground">
+                edit shortlist
+              </a>
+            </>
+          ) : (
+            <>{totalCount} available · $/M tokens (in/out)</>
+          )}
         </span>
       </div>
       <select
