@@ -5,8 +5,8 @@ import { themes as prismThemes } from "prism-react-renderer";
 const config: Config = {
   title: "PromptFlow",
   tagline: "A better UI for Langfuse prompt management",
-  url: "https://docs.promptflow.dev",
-  baseUrl: "/",
+  url: "https://martinw.github.io",
+  baseUrl: "/promptflow/",
   onBrokenLinks: "throw",
   i18n: {
     defaultLocale: "en",
