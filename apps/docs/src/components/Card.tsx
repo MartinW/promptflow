@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "@docusaurus/Link";
 
 interface CardProps {
   title: string;
@@ -19,9 +20,9 @@ export default function Card({ title, href, children }: CardProps) {
 
   if (href) {
     return (
-      <a href={href} className="card-link">
+      <Link to={href} className="card-link">
         {inner}
-      </a>
+      </Link>
     );
   }
   return inner;
