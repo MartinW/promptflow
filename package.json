@@ -14,6 +14,8 @@
     "format": "biome format --write .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "docs": "turbo run dev --filter=docs",
+    "docs:build": "turbo run build --filter=docs",
     "screenshot": "bun scripts/screenshot.ts",
     "screenshot:setup": "bun scripts/screenshot-setup.ts"
   },

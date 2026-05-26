@@ -1,0 +1,104 @@
+:root {
+  --ifm-color-primary: #18181b;
+  --ifm-color-primary-dark: #09090b;
+  --ifm-color-primary-darker: #09090b;
+  --ifm-color-primary-darkest: #000000;
+  --ifm-color-primary-light: #3f3f46;
+  --ifm-color-primary-lighter: #52525b;
+  --ifm-color-primary-lightest: #71717a;
+  --ifm-code-font-size: 95%;
+  --ifm-navbar-background-color: #09090b;
+  --ifm-navbar-link-color: #f4f4f5;
+  --ifm-navbar-link-hover-color: #a1a1aa;
+  --ifm-navbar-item-padding-horizontal: 0.75rem;
+}
+
+[data-theme="dark"] {
+  --ifm-color-primary: #a1a1aa;
+  --ifm-color-primary-dark: #71717a;
+  --ifm-color-primary-darker: #52525b;
+  --ifm-color-primary-darkest: #3f3f46;
+  --ifm-color-primary-light: #d4d4d8;
+  --ifm-color-primary-lighter: #e4e4e7;
+  --ifm-color-primary-lightest: #f4f4f5;
+}
+
+/* Card grid */
+.card-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.card-grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 640px) {
+  .card-grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card-link:hover {
+  text-decoration: none;
+}
+
+.card-link .card {
+  height: 100%;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.card-link:hover .card {
+  border-color: var(--ifm-color-primary-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Steps */
+.steps {
+  counter-reset: step-counter;
+  margin: 1.5rem 0;
+}
+
+.step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  counter-increment: step-counter;
+}
+
+.step::before {
+  content: counter(step-counter);
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-top: 0.125rem;
+}
+
+[data-theme="dark"] .step::before {
+  background: var(--ifm-color-primary-dark);
+}
+
+.step-body {
+  flex: 1;
+}
+
+.step-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}

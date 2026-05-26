@@ -14,14 +14,15 @@ Langfuse supports plain-string tags on prompts. PromptFlow layers structured nam
 | `eval:` | LLM-as-judge evaluation templates | `eval:helpfulness` |
 | `app:` | Scope to a specific consumer app | `app:cadence:greeting` |
 | `lang:` | Locale modifier | `lang:en-GB` |
+| `env:` | Deployment scope | `env:prod`, `env:staging` |
 
 ## Composition
 
 Tags compose — a single prompt can carry several namespaced tags. Consumers filter with **AND semantics**: a prompt must carry all specified tags to match.
 
 ```bash
-# Returns prompts tagged with both voice:greeting AND lang:en-GB
-promptflow prompts list --tag voice:greeting,lang:en-GB
+# Returns prompts tagged with both voice AND env:prod
+promptflow prompts list --tag voice,env:prod
 ```
 
 The same AND semantics apply in the CLI `--tag` flag, the MCP server's `PROMPTFLOW_TAG_FILTER` env var, and the `list_prompts` tool's `tag_filter` argument.
