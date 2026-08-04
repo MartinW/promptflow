@@ -46,7 +46,10 @@ export async function AppHeader() {
               }}
               className="flex items-center gap-2"
             >
-              <span className="hidden md:inline-flex size-7 rounded-full bg-muted border border-border items-center justify-center text-xs font-semibold text-foreground uppercase select-none">
+              <span
+                title={session.user.email}
+                className="hidden md:inline-flex size-7 rounded-full bg-muted border border-border items-center justify-center text-xs font-semibold text-foreground uppercase select-none"
+              >
                 {session.user.email?.[0]}
               </span>
               <button
