@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { isLangfuseConfigured } from "@/lib/server-client";
+import { isActiveProjectConfigured } from "@/lib/server-client";
 import { NewPromptForm } from "./form";
 
 export const dynamic = "force-dynamic";
 
-export default function NewPromptPage() {
-  if (!isLangfuseConfigured()) {
+export default async function NewPromptPage() {
+  if (!(await isActiveProjectConfigured())) {
     return (
       <main className="mx-auto max-w-2xl px-6 py-20 text-center">
         <p className="text-sm text-muted-foreground">
-          Configure Langfuse first.{" "}
+          Configure a project first.{" "}
           <Link href="/prompts" className="underline">
             Go back
           </Link>

@@ -1,10 +1,10 @@
 import { getCorpus } from "@/lib/corpus";
-import { isLangfuseConfigured } from "@/lib/server-client";
+import { isActiveProjectConfigured } from "@/lib/server-client";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
-  if (!isLangfuseConfigured()) {
+  if (!(await isActiveProjectConfigured())) {
     return Response.json({ data: [] });
   }
   try {

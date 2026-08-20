@@ -37,16 +37,21 @@ export class PromptFlowError extends Error {
  * Best-effort: inspects status codes and common error shapes. Anything we
  * can't classify becomes `kind: "unknown"` with the original cause attached.
  */
-export function wrapError(err: unknown): PromptFlowError {
+export function wrapError(err: unknown, detail?: string): PromptFlowError {
   if (err instanceof PromptFlowError) return err;
 
-  // Langfuse's SDK throws raw fetch `Response` objects on HTTP errors;
-  // their default `String()` is `[object Response]`, which is useless.
-  // Surface the status text + url instead.
+  // Both providers' SDKs/clients throw raw fetch `Response` objects on HTTP
+  // errors; their default `String()` is `[object Response]`, which is
+  // useless. Surface the status text + url instead, labelled by host rather
+  // than a hardcoded provider name since this is shared across clients.
+  // `detail` (usually the response body) is optional since callers that
+  // already consumed the body via `.json()` can't re-read it.
   if (typeof Response !== "undefined" && err instanceof Response) {
+    const host = safeHost(err.url);
+    const suffix = detail ? ` — ${detail}` : "";
     return new PromptFlowError(
       mapStatusToKind(err.status),
-      `Langfuse ${err.status} ${err.statusText || ""} (${err.url})`.trim(),
+      `${host} ${err.status} ${err.statusText || ""} (${err.url})${suffix}`.trim(),
       { cause: err, status: err.status },
     );
   }
@@ -55,7 +60,7 @@ export function wrapError(err: unknown): PromptFlowError {
   const status = extractStatus(err);
 
   if (status === 401 || status === 403) {
-    return new PromptFlowError("auth", "Langfuse rejected the credentials", {
+    return new PromptFlowError("auth", "Provider rejected the credentials", {
       cause: err,
       status,
     });
@@ -67,13 +72,13 @@ export function wrapError(err: unknown): PromptFlowError {
     });
   }
   if (status === 429) {
-    return new PromptFlowError("rate_limit", "Langfuse rate limit exceeded", {
+    return new PromptFlowError("rate_limit", "Provider rate limit exceeded", {
       cause: err,
       status,
     });
   }
   if (status && status >= 500) {
-    return new PromptFlowError("network", `Langfuse upstream error (${status})`, {
+    return new PromptFlowError("network", `Provider upstream error (${status})`, {
       cause: err,
       status,
     });
@@ -82,6 +87,14 @@ export function wrapError(err: unknown): PromptFlowError {
     return new PromptFlowError("network", message, { cause: err });
   }
   return new PromptFlowError("unknown", message, { cause: err, status });
+}
+
+function safeHost(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "Request";
+  }
 }
 
 function mapStatusToKind(status: number): PromptFlowErrorKind {

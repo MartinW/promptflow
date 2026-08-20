@@ -8,7 +8,7 @@ import {
   listOpenRouterModels,
   type ModelGroup,
 } from "@/lib/openrouter";
-import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
+import { getServerClient, isActiveProjectConfigured } from "@/lib/server-client";
 import { Playground, type PromptShape } from "./playground";
 
 export const dynamic = "force-dynamic";
@@ -73,7 +73,7 @@ export default async function PlayPage({
   params: Promise<{ name: string }>;
   searchParams: Promise<{ v?: string }>;
 }) {
-  if (!isLangfuseConfigured()) {
+  if (!(await isActiveProjectConfigured())) {
     notFound();
   }
 
@@ -82,7 +82,7 @@ export default async function PlayPage({
   const name = decodeURIComponent(encodedName);
   const requestedVersion = v ? Number.parseInt(v, 10) : undefined;
 
-  const client = getServerClient();
+  const client = await getServerClient();
   let shape: PromptShape;
   let version = 0;
   let userContextDefault: string | undefined;

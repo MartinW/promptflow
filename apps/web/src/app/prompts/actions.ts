@@ -62,7 +62,7 @@ export async function createPromptAction(formData: FormData): Promise<CreateProm
   const tags = parseTagList(tagsRaw);
 
   try {
-    const client = getServerClient();
+    const client = await getServerClient();
     const input = buildSaveInput(shape, {
       name,
       tags,
@@ -74,7 +74,7 @@ export async function createPromptAction(formData: FormData): Promise<CreateProm
     return { ok: false, error: formatError(err) };
   }
 
-  invalidateCorpus();
+  await invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(name)}`);
   redirect(`/prompts/${encodeURIComponent(name)}`);
@@ -97,7 +97,7 @@ export async function updatePromptAction(formData: FormData): Promise<CreateProm
   const tags = parseTagList(tagsRaw);
 
   try {
-    const client = getServerClient();
+    const client = await getServerClient();
     const input = buildSaveInput(shape, {
       name,
       tags,
@@ -109,7 +109,7 @@ export async function updatePromptAction(formData: FormData): Promise<CreateProm
     return { ok: false, error: formatError(err) };
   }
 
-  invalidateCorpus();
+  await invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(name)}`);
   redirect(`/prompts/${encodeURIComponent(name)}`);
@@ -125,13 +125,13 @@ export async function deletePromptAction(formData: FormData): Promise<DeleteProm
   if (!name) return { ok: false, error: "Missing prompt name" };
 
   try {
-    const client = getServerClient();
+    const client = await getServerClient();
     await client.deletePrompt(name);
   } catch (err) {
     return { ok: false, error: formatError(err) };
   }
 
-  invalidateCorpus();
+  await invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(name)}`);
   redirect("/prompts");
@@ -169,10 +169,11 @@ export async function renamePromptAction(formData: FormData): Promise<RenameProm
     return { ok: false, fieldErrors };
   }
 
-  const client = getServerClient();
+  const client = await getServerClient();
 
-  // Pre-flight: refuse if the new name already exists. Langfuse would happily
-  // create a new version under it instead, which is not what the user expects.
+  // Pre-flight: refuse if the new name already exists. The provider would
+  // happily create a new version under it instead, which is not what the
+  // user expects.
   try {
     const existing = await client.listPrompts({ name: newName, limit: 1 });
     if (existing.some((p) => p.name === newName)) {
@@ -232,7 +233,7 @@ export async function renamePromptAction(formData: FormData): Promise<RenameProm
     }
   }
 
-  invalidateCorpus();
+  await invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(oldName)}`);
   revalidatePath(`/prompts/${encodeURIComponent(newName)}`);

@@ -59,7 +59,7 @@ export async function POST(req: Request): Promise<Response> {
 
   let messages: ChatMessage[];
   try {
-    const client = getServerClient();
+    const client = await getServerClient();
     const prompt = await client.getPrompt(body.promptName, { version: body.version });
     const variables = body.variables ?? {};
     if (prompt.type === "text") {

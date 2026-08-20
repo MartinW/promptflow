@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { pickProvider } from "@/lib/aiprovider";
-import { checkLangfuse } from "@/lib/langfuse";
+import { checkActiveProject } from "@/lib/project-status";
 
 export async function AppHeader() {
-  const [status, session] = await Promise.all([checkLangfuse(), auth()]);
-  const langfuse = langfuseIndicator(status);
+  const [status, session] = await Promise.all([checkActiveProject(), auth()]);
+  const project = projectIndicator(status);
   const provider = providerIndicator(pickProvider());
 
   return (
@@ -30,8 +30,8 @@ export async function AppHeader() {
           </kbd>
           <div className="flex flex-col items-start gap-1">
             <div className="flex items-center gap-2">
-              <span className={`size-2 rounded-full ${langfuse.dot}`} />
-              <span>{langfuse.label}</span>
+              <span className={`size-2 rounded-full ${project.dot}`} />
+              <span>{project.label}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className={`size-2 rounded-full ${provider.dot}`} />
@@ -46,9 +46,7 @@ export async function AppHeader() {
               }}
               className="flex items-center gap-2"
             >
-              <span className="hidden md:inline text-muted-foreground">
-                {session.user.email}
-              </span>
+              <span className="hidden md:inline text-muted-foreground">{session.user.email}</span>
               <button
                 type="submit"
                 className="rounded border border-border px-2 py-1 hover:bg-muted/40 transition-colors"
@@ -63,14 +61,16 @@ export async function AppHeader() {
   );
 }
 
-function langfuseIndicator(status: Awaited<ReturnType<typeof checkLangfuse>>) {
+function projectIndicator(status: Awaited<ReturnType<typeof checkActiveProject>>) {
   if (status.kind === "ok") {
-    return { dot: "bg-emerald-500", label: "Langfuse connected" };
+    const label = status.project === "langfuse" ? "Langfuse" : "PostHog";
+    return { dot: "bg-emerald-500", label: `${label} connected` };
   }
   if (status.kind === "unconfigured") {
-    return { dot: "bg-amber-500", label: "Langfuse not configured" };
+    return { dot: "bg-amber-500", label: "No project configured" };
   }
-  return { dot: "bg-red-500", label: "Langfuse error" };
+  const label = status.project === "langfuse" ? "Langfuse" : "PostHog";
+  return { dot: "bg-red-500", label: `${label} error` };
 }
 
 function providerIndicator(provider: ReturnType<typeof pickProvider>) {

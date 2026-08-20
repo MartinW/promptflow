@@ -5,7 +5,7 @@ import type { NeighbourPrompt } from "@/components/canvas/per-prompt-canvas";
 import { Card } from "@/components/ui/card";
 import { getCorpus } from "@/lib/corpus";
 import { parsePromptToShape } from "@/lib/prompt-shape";
-import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
+import { getServerClient, isActiveProjectConfigured } from "@/lib/server-client";
 import { EditPromptForm } from "./form";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export default async function EditPromptPage({
   params: Promise<{ name: string }>;
   searchParams: Promise<{ from?: string }>;
 }) {
-  if (!isLangfuseConfigured()) {
+  if (!(await isActiveProjectConfigured())) {
     notFound();
   }
 
@@ -26,7 +26,7 @@ export default async function EditPromptPage({
   const name = decodeURIComponent(encodedName);
   const baseVersion = from ? Number.parseInt(from, 10) : undefined;
 
-  const client = getServerClient();
+  const client = await getServerClient();
   let parsed: ReturnType<typeof parsePromptToShape>;
   let currentVersion = 0;
   let initialTags: string[] = [];
@@ -49,7 +49,7 @@ export default async function EditPromptPage({
   // can render referenced + referencing prompts without extra fetches. Failing
   // to load the corpus must not block editing — fall through to an empty map.
   let reverseRefs: string[] = [];
-  let corpusByName: Record<string, NeighbourPrompt> = {};
+  const corpusByName: Record<string, NeighbourPrompt> = {};
   try {
     const corpus = await getCorpus();
     reverseRefs = corpus.referenceGraph.nodes.get(name)?.referencedBy ?? [];
@@ -87,8 +87,8 @@ export default async function EditPromptPage({
           <h1 className="text-lg font-semibold">Can't edit this prompt here</h1>
           <p className="text-sm text-muted-foreground">{parsed.reason}</p>
           <p className="text-sm text-muted-foreground">
-            Edit it in the Langfuse dashboard for now — multi-turn / placeholder support in
-            PromptFlow's editor is on the roadmap.
+            Edit it directly in your provider's dashboard for now — multi-turn / placeholder support
+            in PromptFlow's editor is on the roadmap.
           </p>
         </Card>
       </main>

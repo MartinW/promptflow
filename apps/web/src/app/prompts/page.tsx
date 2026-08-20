@@ -14,9 +14,9 @@ import { TagBadge } from "@/components/tags/tag-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { VIEW_COOKIE_NAME } from "@/components/view-cookie";
-import { ViewToggle, type PromptsView } from "@/components/view-toggle";
-import { getCorpus, type CorpusPrompt } from "@/lib/corpus";
-import { isLangfuseConfigured } from "@/lib/server-client";
+import { type PromptsView, ViewToggle } from "@/components/view-toggle";
+import { type CorpusPrompt, getCorpus } from "@/lib/corpus";
+import { isActiveProjectConfigured } from "@/lib/server-client";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,7 @@ export default async function PromptsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  if (!isLangfuseConfigured()) {
+  if (!(await isActiveProjectConfigured())) {
     return <NotConfigured />;
   }
 
@@ -62,9 +62,7 @@ export default async function PromptsPage({
     prompts = corpus.prompts;
     folderTree = corpus.folderTree;
     productionNames = new Set(
-      corpus.prompts
-        .filter((p) => p.meta.labels.includes("production"))
-        .map((p) => p.meta.name),
+      corpus.prompts.filter((p) => p.meta.labels.includes("production")).map((p) => p.meta.name),
     );
   } catch (err) {
     prompts = [];
@@ -90,7 +88,7 @@ export default async function PromptsPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Prompts</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {prompts.length} {prompts.length === 1 ? "prompt" : "prompts"} in this Langfuse project.
+            {prompts.length} {prompts.length === 1 ? "prompt" : "prompts"} in this project.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -129,14 +127,15 @@ export default async function PromptsPage({
           {error ? <ErrorBanner message={error} /> : null}
 
           {view === "list" ? (
-            <PromptsList filtered={filtered} hasFilter={hasAnyFilter(query, selectedTags, folderPath)} />
+            <PromptsList
+              filtered={filtered}
+              hasFilter={hasAnyFilter(query, selectedTags, folderPath)}
+            />
           ) : view === "canvas" ? (
             <GlobalCanvas prompts={filtered} />
           ) : (
             <DuplicatesResults
-              groups={findDuplicates(
-                prompts.map((p) => ({ name: p.meta.name, body: p.body })),
-              )}
+              groups={findDuplicates(prompts.map((p) => ({ name: p.meta.name, body: p.body })))}
             />
           )}
         </section>
@@ -173,9 +172,7 @@ function PromptsList({ filtered, hasFilter }: PromptsListProps) {
                     {entry.meta.versions.length}{" "}
                     {entry.meta.versions.length === 1 ? "version" : "versions"} · updated{" "}
                     {formatRelative(entry.meta.lastUpdatedAt)}
-                    {entry.references.length > 0
-                      ? ` · refs ${entry.references.length}`
-                      : ""}
+                    {entry.references.length > 0 ? ` · refs ${entry.references.length}` : ""}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-1 justify-end">
@@ -196,27 +193,23 @@ function NotConfigured() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-20">
       <Card className="p-8 space-y-4">
-        <h1 className="text-xl font-semibold">Langfuse not configured</h1>
+        <h1 className="text-xl font-semibold">No project configured</h1>
         <p className="text-sm text-muted-foreground">
-          Set the following environment variables in <code className="font-mono">.env.local</code>{" "}
-          and restart the server:
+          Set credentials for at least one provider in <code className="font-mono">.env.local</code>{" "}
+          and restart the server. See <code className="font-mono">.env.example</code> for the full
+          list — either the <code className="font-mono">LANGFUSE_*</code> or{" "}
+          <code className="font-mono">POSTHOG_*</code> block (or both, then pick the active one in{" "}
+          <a href="/settings" className="underline">
+            Settings
+          </a>
+          ).
         </p>
         <pre className="text-xs font-mono bg-muted rounded-md p-4 leading-6">
           LANGFUSE_PUBLIC_KEY=pk-lf-...{"\n"}LANGFUSE_SECRET_KEY=sk-lf-...{"\n"}
-          LANGFUSE_HOST=https://cloud.langfuse.com
+          LANGFUSE_HOST=https://cloud.langfuse.com{"\n\n"}
+          POSTHOG_PERSONAL_API_KEY=phx_...{"\n"}POSTHOG_PROJECT_ID=...{"\n"}
+          POSTHOG_HOST=https://us.posthog.com
         </pre>
-        <p className="text-xs text-muted-foreground">
-          Don't have a Langfuse project?{" "}
-          <a
-            href="https://cloud.langfuse.com"
-            className="underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Create one for free
-          </a>
-          .
-        </p>
       </Card>
     </main>
   );
@@ -245,7 +238,7 @@ function EmptyState({ hasFilter }: { hasFilter: boolean }) {
     <Card className="p-10 text-center space-y-3">
       <h2 className="font-medium">No prompts yet</h2>
       <p className="text-sm text-muted-foreground max-w-md mx-auto">
-        Your Langfuse project is connected but empty.
+        Your project is connected but empty.
       </p>
       <Link href="/prompts/new" className={`${buttonVariants()} mt-4`}>
         Create your first prompt

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
+import { getServerClient, isActiveProjectConfigured } from "@/lib/server-client";
 import { DeleteDialog } from "./delete-dialog";
 import { RenameDialog } from "./rename-dialog";
 
@@ -28,7 +28,7 @@ export default async function PromptDetailPage({
   params: Promise<PageParams>;
   searchParams: Promise<PageSearchParams>;
 }) {
-  if (!isLangfuseConfigured()) {
+  if (!(await isActiveProjectConfigured())) {
     notFound();
   }
 
@@ -37,7 +37,7 @@ export default async function PromptDetailPage({
   const name = decodeURIComponent(encodedName);
   const requestedVersion = v ? Number.parseInt(v, 10) : undefined;
 
-  const client = getServerClient();
+  const client = await getServerClient();
   let prompt: Prompt;
   try {
     // resolve: false so the detail view can render @@@langfusePrompt tags as
@@ -205,8 +205,8 @@ export default async function PromptDetailPage({
           <div>
             <p className="text-sm font-medium">Delete this prompt</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Removes all {versions.length} version{versions.length === 1 ? "" : "s"} from Langfuse.
-              Can't be undone.
+              Removes all {versions.length} version{versions.length === 1 ? "" : "s"}. Can't be
+              undone.
             </p>
           </div>
           <DeleteDialog
@@ -279,7 +279,7 @@ async function loadAllVersions(
   name: string,
 ): Promise<{ versions: number[]; labels: string[] } | null> {
   try {
-    const client = getServerClient();
+    const client = await getServerClient();
     const list = await client.listPrompts({ name, limit: 1 });
     const match = list.find((p) => p.name === name);
     return match ? { versions: match.versions, labels: match.labels } : null;

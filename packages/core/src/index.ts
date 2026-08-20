@@ -19,13 +19,15 @@ export type {
   PromptBodyInput,
 } from "./duplicate-scan";
 export { findDuplicates, splitParagraphs } from "./duplicate-scan";
+export type { PromptFlowErrorKind } from "./errors";
+export { PromptFlowError, wrapError } from "./errors";
 export type { FolderNode } from "./folder-tree";
 export { buildFolderTree, nodeForPath, walkTree } from "./folder-tree";
+export type { PostHogClientConfig } from "./posthog-client";
+export { createPostHogClient } from "./posthog-client";
 export { flattenPromptForAnalysis } from "./prompt-body";
 export type { GraphNode, PromptBody, ReferenceGraph } from "./reference-graph";
 export { buildReferenceGraph, subgraphFor } from "./reference-graph";
-export type { PromptFlowErrorKind } from "./errors";
-export { PromptFlowError, wrapError } from "./errors";
 export type { SSMLValidationResult } from "./ssml";
 export { validateSSML } from "./ssml";
 export type { Namespace, NamespaceColor, ParsedTag } from "./tags";
@@ -34,8 +36,8 @@ export {
   inNamespace,
   matchesFilter,
   matchesTags,
-  namespaceColor,
   Namespaces,
+  namespaceColor,
   parseTag,
   tagsInNamespace,
 } from "./tags";

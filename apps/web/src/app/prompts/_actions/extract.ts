@@ -164,7 +164,7 @@ export async function extractPromptAction(formData: FormData): Promise<ExtractPr
   const rewrittenField = fieldText.slice(0, selectionStart) + referenceToken + fieldText.slice(selectionEnd);
   const rewrittenShape: ComposeShape = { ...sourceShape, [fieldKey]: rewrittenField };
 
-  const client = getServerClient();
+  const client = await getServerClient();
 
   // Pre-flight: refuse if the new name already exists. Creating "v2" of an
   // unrelated prompt would silently scribble on it.
@@ -242,7 +242,7 @@ export async function extractPromptAction(formData: FormData): Promise<ExtractPr
     }
   }
 
-  invalidateCorpus();
+  await invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(sourceName)}`);
   revalidatePath(`/prompts/${encodeURIComponent(newName)}`);
@@ -300,7 +300,7 @@ export async function bulkExtractDuplicateAction(
   if (Object.keys(fieldErrors).length > 0) return { ok: false, fieldErrors };
   if (targetNames.length === 0) return { ok: false, error: "Pick at least one target prompt" };
 
-  const client = getServerClient();
+  const client = await getServerClient();
   const referenceToken = formatReferenceTag({ name: newName, label: "latest" });
 
   try {
@@ -347,7 +347,7 @@ export async function bulkExtractDuplicateAction(
     }
   }
 
-  invalidateCorpus();
+  await invalidateCorpus();
   revalidatePath("/prompts");
   revalidatePath(`/prompts/${encodeURIComponent(newName)}`);
   for (const t of appliedTargets) revalidatePath(`/prompts/${encodeURIComponent(t)}`);

@@ -2,25 +2,28 @@ import "server-only";
 import {
   buildFolderTree,
   buildReferenceGraph,
-  flattenPromptForAnalysis,
   type FolderNode,
+  flattenPromptForAnalysis,
   type Prompt,
   type PromptMeta,
   type ReferenceGraph,
 } from "@promptflow/core";
-import { getServerClient, isLangfuseConfigured } from "./server-client";
+import type { ProjectId } from "./projects";
+import { getActiveProjectId, getServerClient } from "./server-client";
 
 /**
- * Single server-side projection of the Langfuse prompt corpus.
+ * Single server-side projection of the active project's prompt corpus.
  *
  * Every new feature (folder tree, tag picker, canvas, duplicate scan) reads
  * from the same projection so they share cache + invalidation. Without this,
  * `listPrompts()` ends up scattered across surfaces and stale data leaks.
  *
- * Cache strategy: module-level Map keyed by Langfuse public key, 30s TTL.
- * Every write action calls `invalidateCorpus()` to drop the entry. A plain
- * Map is preferred over Next's `unstable_cache` because the interaction with
- * `revalidatePath` in dev is fiddly and we control all writers here.
+ * Cache strategy: module-level Map keyed by `${projectId}:${credential}`,
+ * 30s TTL, so switching the active project never serves the other provider's
+ * stale entry. Every write action calls `invalidateCorpus()` to drop the
+ * entry. A plain Map is preferred over Next's `unstable_cache` because the
+ * interaction with `revalidatePath` in dev is fiddly and we control all
+ * writers here.
  */
 
 export interface CorpusPrompt {
@@ -46,27 +49,34 @@ export interface PromptCorpus {
 const TTL_MS = 30_000;
 const cache = new Map<string, { value: PromptCorpus; expiresAt: number }>();
 
-function cacheKey(): string {
-  return process.env.LANGFUSE_PUBLIC_KEY ?? "anon";
+function credentialFingerprint(id: ProjectId): string {
+  if (id === "langfuse") return process.env.LANGFUSE_PUBLIC_KEY ?? "anon";
+  return process.env.POSTHOG_PROJECT_ID ?? "anon";
+}
+
+/** Null when no project is configured/active. */
+async function cacheKey(): Promise<string | null> {
+  const id = await getActiveProjectId();
+  return id ? `${id}:${credentialFingerprint(id)}` : null;
 }
 
 /**
  * Return the cached corpus or fetch a fresh one. Returns an empty corpus if
- * Langfuse isn't configured so pages can render a setup state without
+ * no project is configured/active so pages can render a setup state without
  * crashing.
  */
 export async function getCorpus(): Promise<PromptCorpus> {
-  if (!isLangfuseConfigured()) {
+  const key = await cacheKey();
+  if (!key) {
     return emptyCorpus();
   }
-  const key = cacheKey();
   const now = Date.now();
   const entry = cache.get(key);
   if (entry && entry.expiresAt > now) {
     return entry.value;
   }
 
-  const client = getServerClient();
+  const client = await getServerClient();
   const metas = await client.listPrompts({ limit: 100 });
 
   const prompts: CorpusPrompt[] = await Promise.all(
@@ -140,8 +150,9 @@ export async function getCorpus(): Promise<PromptCorpus> {
 }
 
 /** Drop the cached corpus. Call from every write action. */
-export function invalidateCorpus(): void {
-  cache.delete(cacheKey());
+export async function invalidateCorpus(): Promise<void> {
+  const key = await cacheKey();
+  if (key) cache.delete(key);
 }
 
 function emptyCorpus(): PromptCorpus {
