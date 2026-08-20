@@ -46,3 +46,6 @@ coverage/
 .vercel/
 .vercel
 .gstack/
+
+# Docusaurus
+.docusaurus/
