@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, JetBrains_Mono, Lora, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
-import { AppHeader } from "@/components/app-header";
 import { CommandPalette } from "@/components/command-palette";
 import { fontFamilyInitScript } from "@/components/font-family";
 import { styleVariantInitScript } from "@/components/style-variant";
@@ -57,8 +56,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider>
-          <AppHeader />
-          <div className="flex-1">{children}</div>
+          {children}
           <CommandPalette />
           <Toaster position="bottom-right" />
         </ThemeProvider>
