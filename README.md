@@ -83,24 +83,49 @@ If any keys are missing, the app renders graceful "not configured" states instea
 
 ## Authentication
 
-**By default, the deployment is open** — anyone with the URL can use it. This is the simplest path for self-hosting on your own machine or a private network.
+PromptFlow implements **localhost-open / production-locked** authentication:
 
-> ⚠️ **If you deploy without auth on a public URL, anyone who finds it can use your Langfuse data and burn through your OpenRouter / AI Gateway quota.** Either configure auth (below), put the app behind a VPN or Cloudflare Access, or both. There is no built-in rate-limiting.
+- **Localhost / development** (fail-open): When running on `localhost`, `127.0.0.1`, `[::1]`, or `NODE_ENV=development` without Vercel production, missing auth config keeps the app usable without login. This provides a friction-free local development experience.
 
-To enable Google sign-in, set **all three** of `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET`. The middleware then redirects every unauthenticated request to `/sign-in` (Auth.js v5, JWT session strategy — no database required).
+- **Production / public deployments** (fail-closed): When deployed publicly (`VERCEL_ENV=production` or `NODE_ENV=production` with a non-loopback host), the app **requires full authentication configuration**. Without it, all protected routes return a clear 503 error page with setup instructions. This prevents accidentally exposing your Langfuse data and AI API quota.
+
+### Threat model
+
+Running without auth on a public URL allows anyone who finds it to:
+- Read, create, update, and delete your Langfuse prompts
+- Execute playground requests that burn through your OpenRouter / AI Gateway quota
+- View prompt history and trace data
+
+**Never deploy to a public URL without either:**
+1. Configuring authentication (below), OR
+2. Putting the app behind a VPN, Cloudflare Access, or similar network-level protection
+
+There is no built-in rate limiting.
 
 CLI and MCP server are unaffected by web auth — they call Langfuse directly with their own credentials.
 
-**Setup**
+### Setup (required for production)
 
-1. **Generate `AUTH_SECRET`:** `bunx auth secret` (writes to `.env.local`, or copy into `.env`).
+To enable Google sign-in, set **all** of the following environment variables:
+
+1. **Generate `AUTH_SECRET`:** `bunx auth secret` (writes to `.env.local`, or copy into `.env`)
 2. **Google OAuth:** [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → *Create Credentials* → *OAuth client ID* → Web application. Add authorized redirect URIs:
    - `http://localhost:3003/api/auth/callback/google` (dev)
    - `https://<your-prod-host>/api/auth/callback/google` (prod)
-   Copy the client ID and secret into `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
-3. **Restrict access (recommended for self-hosted):** set `AUTH_ALLOWED_EMAILS` and/or `AUTH_ALLOWED_EMAIL_DOMAINS`. With both empty, any Google account can sign in.
+   
+   Copy the client ID and secret into `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`.
 
-**Partial config = no auth.** All three of `AUTH_SECRET` / `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` must be present, or auth is disabled entirely (fail-open). This is deliberate so a typo doesn't brick your deployment.
+3. **Restrict access (required for production):** Set at least one of:
+   - `AUTH_ALLOWED_EMAILS` — comma-separated email allowlist (e.g., `alice@example.com,bob@example.com`)
+   - `AUTH_ALLOWED_EMAIL_DOMAINS` — comma-separated domain allowlist (e.g., `example.com,acme.org`)
+   
+   Production deployments **require** an allowlist to prevent "any Google account" access.
+
+**Partial config behavior:**
+- **Local/dev:** Missing auth config = no authentication required (fail-open for easy local development)
+- **Production:** Missing any of `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, or both allowlist vars = 503 error page (fail-closed)
+
+The middleware intercepts requests before they reach protected routes and enforces authentication at the Proxy level. Additionally, all server actions and API routes independently verify authentication (defense in depth).
 
 **Self-hosters** can swap or add providers (GitHub, Email magic link, credentials, etc.) by editing `apps/web/src/auth.ts`. Auth.js supports [80+ providers](https://authjs.dev/getting-started/authentication/oauth) out of the box.
 
