@@ -1,0 +1,161 @@
+{
+  "name": "@promptflow/mcp-server",
+  "version": "0.0.1",
+  "description": "Model Context Protocol server that exposes your Langfuse prompts to MCP-aware clients (Claude Desktop, Claude Code, Cursor, etc.). Authored prompts become first-class MCP Prompts the host LLM can invoke by name.",
+  "status": "unpublished",
+  "license": "MIT",
+  "homepage": "https://github.com/MartinW/promptflow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MartinW/promptflow.git",
+    "directory": "apps/mcp-server"
+  },
+  "bugs": "https://github.com/MartinW/promptflow/issues",
+  "author": {
+    "name": "Martin Wright",
+    "url": "https://github.com/MartinW"
+  },
+  "transport": "stdio",
+  "runtime": {
+    "node": ">=20.0.0"
+  },
+  "install": {
+    "published": {
+      "command": "npx",
+      "args": ["-y", "@promptflow/mcp-server"],
+      "note": "Use this once package is published to npm"
+    },
+    "unpublished": {
+      "steps": [
+        "git clone https://github.com/MartinW/promptflow.git",
+        "cd promptflow && bun install && bunx turbo run build --filter=mcp-server",
+        "Use: node /absolute/path/to/promptflow/apps/mcp-server/dist/index.js"
+      ],
+      "note": "Current install method until npm publish"
+    }
+  },
+  "configuration": {
+    "required": {
+      "LANGFUSE_PUBLIC_KEY": {
+        "type": "string",
+        "description": "Langfuse project public key (pk-lf-...)"
+      },
+      "LANGFUSE_SECRET_KEY": {
+        "type": "string",
+        "description": "Langfuse project secret key (sk-lf-...)",
+        "sensitive": true
+      }
+    },
+    "optional": {
+      "LANGFUSE_HOST": {
+        "type": "string",
+        "description": "Self-hosted Langfuse base URL",
+        "default": "https://cloud.langfuse.com"
+      },
+      "PROMPTFLOW_TAG_FILTER": {
+        "type": "string",
+        "description": "Comma-separated AND filter to scope which prompts the LLM sees (e.g., 'voice:greeting,lang:en')"
+      },
+      "PROMPTFLOW_LABEL": {
+        "type": "string",
+        "description": "Default Langfuse label when no version specified",
+        "default": "latest"
+      },
+      "PROMPTFLOW_CACHE_TTL_SECONDS": {
+        "type": "number",
+        "description": "In-memory cache TTL in seconds",
+        "default": 300
+      },
+      "OPENROUTER_API_KEY": {
+        "type": "string",
+        "description": "Enables the run_prompt tool for executing prompts via OpenRouter",
+        "sensitive": true
+      },
+      "PROMPTFLOW_LOG_LEVEL": {
+        "type": "string",
+        "description": "Log level: debug, info, warn, error",
+        "default": "warn"
+      }
+    }
+  },
+  "capabilities": {
+    "prompts": {
+      "description": "Every Langfuse prompt becomes an invocable MCP Prompt",
+      "features": [
+        "Auto-discovered arguments from prompt variables",
+        "Version pinning (prompt@v3) and label pinning (prompt#staging)",
+        "Default values from PromptFlow compose editor config.defaults"
+      ]
+    },
+    "tools": [
+      {
+        "name": "list_prompts",
+        "description": "List prompts with optional tag filter (comma-separated, AND semantics)"
+      },
+      {
+        "name": "search_prompts",
+        "description": "Fuzzy search prompts by name, tags, or labels"
+      },
+      {
+        "name": "get_prompt_metadata",
+        "description": "Inspect prompt type, versions, labels, detected variables"
+      },
+      {
+        "name": "render_prompt",
+        "description": "Substitute variables and return messages without executing"
+      },
+      {
+        "name": "refresh_prompts",
+        "description": "Flush the in-memory cache"
+      },
+      {
+        "name": "run_prompt",
+        "description": "Execute prompt via OpenRouter (only registered when OPENROUTER_API_KEY is set)"
+      }
+    ]
+  },
+  "examples": {
+    "claude_desktop": {
+      "config_path": "~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or ~/.config/Claude/claude_desktop_config.json (Linux)",
+      "config": {
+        "mcpServers": {
+          "promptflow": {
+            "command": "npx",
+            "args": ["-y", "@promptflow/mcp-server"],
+            "env": {
+              "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+              "LANGFUSE_SECRET_KEY": "sk-lf-...",
+              "LANGFUSE_HOST": "https://cloud.langfuse.com",
+              "PROMPTFLOW_TAG_FILTER": "voice:greeting",
+              "OPENROUTER_API_KEY": "sk-or-..."
+            }
+          }
+        }
+      }
+    },
+    "cursor": {
+      "config_path": "~/.cursor/mcp.json",
+      "config": {
+        "mcpServers": {
+          "promptflow": {
+            "command": "npx",
+            "args": ["-y", "@promptflow/mcp-server"],
+            "env": {
+              "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+              "LANGFUSE_SECRET_KEY": "sk-lf-..."
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    "langfuse",
+    "prompt",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "cursor",
+    "prompt-management"
+  ]
+}
