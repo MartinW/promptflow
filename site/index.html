@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PromptFlow — A Better UI for Langfuse Prompt Management</title>
+  <meta name="description" content="Tag-first organization, integrated playground, and authoring UI for Langfuse prompts. Web app, CLI, and MCP server. Open core, self-hosted.">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="PromptFlow — A Better UI for Langfuse Prompt Management">
+  <meta property="og:description" content="Tag-first organization, integrated playground, and authoring UI for Langfuse prompts. Web app, CLI, and MCP server. Open core, self-hosted.">
+  <meta property="og:type" content="website">
+  
+  <link rel="stylesheet" href="./style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="./" class="logo">PromptFlow</a>
+        <nav class="nav">
+          <a href="https://github.com/MartinW/promptflow" class="nav-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/MartinW/promptflow#quickstart" class="btn btn-sm btn-primary" target="_blank" rel="noopener noreferrer">Get Started</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1 class="hero-title">A Better UI for Langfuse<br>Prompt Management</h1>
+          <p class="hero-description">
+            Tag-first organization, integrated playground, and authoring UI for your Langfuse prompts. 
+            Open core, self-hosted.
+          </p>
+          <div class="hero-cta">
+            <a href="https://github.com/MartinW/promptflow" class="btn btn-lg btn-primary" target="_blank" rel="noopener noreferrer">
+              View on GitHub
+            </a>
+            <a href="https://github.com/MartinW/promptflow#quickstart" class="btn btn-lg btn-outline" target="_blank" rel="noopener noreferrer">
+              Clone & Run
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Positioning -->
+    <section class="section section-alt">
+      <div class="container container-sm">
+        <div class="text-center">
+          <p class="positioning-text">Langfuse is the storage layer. PromptFlow is the editor.</p>
+          <p class="positioning-subtitle">
+            Built for teams who need a better authoring experience without leaving the Langfuse ecosystem.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Why PromptFlow?</h2>
+          <p class="section-subtitle">
+            Langfuse is powerful, but its default prompt UI wasn't built for rapid authoring.
+          </p>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <h3 class="card-title">Pain: No Tag Navigation</h3>
+            <p class="card-text">
+              Langfuse prompts support tags, but there's no built-in filtering or tag-first organization. 
+              Finding prompts by purpose or consumer app is manual.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Pain: No Integrated Playground</h3>
+            <p class="card-text">
+              Testing prompt changes means copying templates into a separate tool or writing code. 
+              No live preview with token counts and streaming.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">What You Get</h2>
+        </div>
+        <div class="grid grid-3">
+          <div class="card">
+            <h3 class="card-title">Authoring UI</h3>
+            <p class="card-text">
+              Compose editor with optional System Prompt and User Context fields. Inline diff viewer for 
+              version comparisons. Drafts by default — explicit "Promote to production" control.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Integrated Playground</h3>
+            <p class="card-text">
+              Stream responses via OpenRouter or Vercel AI Gateway. Live token counts, cost estimation, 
+              and latency. Provider-grouped model picker. Test before you save.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Tag-First Organization</h3>
+            <p class="card-text">
+              Filter prompts by purpose (voice:*, image:*, eval:*), consumer app (app:*), or locale (lang:*). 
+              Tag conventions documented in @promptflow/core.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ecosystem -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">One Registry, Multiple Consumers</h2>
+          <p class="section-subtitle">
+            PromptFlow is more than a web app — it's an ecosystem for managing prompts across platforms.
+          </p>
+        </div>
+        <div class="grid grid-4">
+          <div class="card card-sm">
+            <h3 class="card-title">Web</h3>
+            <p class="card-text card-text-sm">
+              Next.js authoring UI with integrated playground. The primary interface for prompt management.
+            </p>
+          </div>
+          <div class="card card-sm">
+            <h3 class="card-title">CLI</h3>
+            <p class="card-text card-text-sm">
+              @promptflow/cli — list, get, pull, push, run, and diff prompts from the terminal. 
+              Author prompts as JSON files.
+            </p>
+          </div>
+          <div class="card card-sm">
+            <h3 class="card-title">MCP Server</h3>
+            <p class="card-text card-text-sm">
+              Register with Claude Desktop or Cursor. Your Langfuse prompts become MCP Prompts and tools.
+            </p>
+          </div>
+          <div class="card card-sm">
+            <h3 class="card-title">Cadence iOS</h3>
+            <p class="card-text card-text-sm">
+              Reads voice:* tagged prompts aloud via OpenRouter. Remote prompt management — edit in the web UI, 
+              see changes on launch.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MCP / Agents -->
+    <section class="section section-alt">
+      <div class="container container-md">
+        <div class="section-header">
+          <h2 class="section-title">Use with AI Agents</h2>
+          <p class="section-subtitle">
+            Your Langfuse prompts become first-class MCP Prompts that host LLMs can invoke by name.
+          </p>
+        </div>
+        <div class="mcp-section">
+          <h3 class="mcp-title">MCP Server</h3>
+          <p class="mcp-description">
+            Register <code>@promptflow/mcp-server</code> with Claude Desktop, Cursor, or other MCP clients. 
+            Your prompts become invocable with version pinning, auto-discovered arguments, and built-in search tools.
+          </p>
+          
+          <div class="mcp-configs">
+            <div class="mcp-config">
+              <h4 class="mcp-config-title">Claude Desktop</h4>
+              <pre class="code-block"><code>{
+  "mcpServers": {
+    "promptflow": {
+      "command": "npx",
+      "args": ["-y", "@promptflow/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-...",
+        "LANGFUSE_HOST": "https://cloud.langfuse.com"
+      }
+    }
+  }
+}</code></pre>
+              <p class="mcp-config-note">
+                Config path: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> (macOS)
+              </p>
+            </div>
+
+            <div class="mcp-config">
+              <h4 class="mcp-config-title">Cursor</h4>
+              <pre class="code-block"><code>{
+  "mcpServers": {
+    "promptflow": {
+      "command": "npx",
+      "args": ["-y", "@promptflow/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-..."
+      }
+    }
+  }
+}</code></pre>
+              <p class="mcp-config-note">
+                Config path: <code>~/.cursor/mcp.json</code>
+              </p>
+            </div>
+          </div>
+
+          <div class="status-notice">
+            <strong>Status:</strong> Built and tested locally; not yet published to npm. Until published, 
+            clone the repo, run <code>bun install && bunx turbo run build --filter=mcp-server</code>, 
+            and point your config at <code>/absolute/path/to/promptflow/apps/mcp-server/dist/index.js</code>.
+          </div>
+
+          <div class="mcp-links">
+            <a href="https://github.com/MartinW/promptflow/tree/main/apps/mcp-server" class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">
+              MCP Server README
+            </a>
+            <a href="./llms.txt" class="link-muted">llms.txt</a>
+            <a href="./.well-known/mcp/server-card.json" class="link-muted">MCP server card</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tag Conventions -->
+    <section class="section">
+      <div class="container container-md">
+        <div class="section-header">
+          <h2 class="section-title">Tag Conventions</h2>
+          <p class="section-subtitle">
+            PromptFlow layers conventions on Langfuse's plain-string tags. Consumers filter by namespace.
+          </p>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Namespace</th>
+                <th>Purpose</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>voice:</code></td>
+                <td>TTS-optimized templates</td>
+                <td><code class="text-muted">voice:greeting</code></td>
+              </tr>
+              <tr>
+                <td><code>image:</code></td>
+                <td>Image-generation templates</td>
+                <td><code class="text-muted">image:product-shot</code></td>
+              </tr>
+              <tr>
+                <td><code>eval:</code></td>
+                <td>LLM-as-judge templates</td>
+                <td><code class="text-muted">eval:helpfulness</code></td>
+              </tr>
+              <tr>
+                <td><code>app:</code></td>
+                <td>Scope to a consumer app</td>
+                <td><code class="text-muted">app:cadence:greeting</code></td>
+              </tr>
+              <tr>
+                <td><code>lang:</code></td>
+                <td>Locale</td>
+                <td><code class="text-muted">lang:en-GB</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Open Core -->
+    <section class="section section-alt">
+      <div class="container container-md">
+        <div class="text-center">
+          <h2 class="section-title">Open Core</h2>
+          <p class="section-subtitle">
+            Root monorepo and @promptflow/* packages are MIT. Enterprise packages (ee/) use Business Source 
+            License 1.1, converting to Apache 2.0 after 4 years.
+          </p>
+          <p class="link-note">
+            Mirrors the 
+            <a href="https://langfuse.com/license" target="_blank" rel="noopener noreferrer">Langfuse open-core model</a>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quickstart CTA -->
+    <section class="section">
+      <div class="container container-md">
+        <div class="text-center">
+          <h2 class="section-title">Get Started</h2>
+          <p class="section-subtitle">
+            Self-hosted and open source. Bring your own Langfuse and OpenRouter keys.
+          </p>
+          <div class="cta-buttons">
+            <a href="https://github.com/MartinW/promptflow" class="btn btn-lg btn-primary" target="_blank" rel="noopener noreferrer">
+              View on GitHub
+            </a>
+            <a href="https://github.com/MartinW/promptflow#quickstart" class="btn btn-lg btn-outline" target="_blank" rel="noopener noreferrer">
+              Clone & Run
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <p class="footer-text">
+          Built by 
+          <a href="https://github.com/MartinW" target="_blank" rel="noopener noreferrer">Martin Wright</a>
+        </p>
+        <div class="footer-links">
+          <a href="https://github.com/MartinW/promptflow" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/MartinW/promptflow/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+          <a href="https://github.com/MartinW/promptflow/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Simple dark mode based on system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    }
+    
+    // Listen for changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (e.matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    });
+  </script>
+</body>
+</html>

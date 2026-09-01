@@ -6,12 +6,17 @@ This document helps AI agents (and human developers) understand, develop, and ex
 
 PromptFlow is an **open-core ecosystem for Langfuse prompt management**. It provides:
 
-1. **Web app** (`apps/web`) — Next.js 16 authoring UI with integrated playground
+1. **Web app** (`apps/web`) — Next.js 16 authoring UI with integrated playground (self-hosted)
 2. **CLI** (`apps/cli`) — Terminal-based prompt CRUD and execution
 3. **MCP server** (`apps/mcp-server`) — Your Langfuse prompts as invocable MCP Prompts
 4. **Core library** (`packages/core`) — Shared Langfuse client, tag utilities, validators (45 tests)
+5. **Marketing site** (`site/`) — Static GitHub Pages site at https://martinw.github.io/promptflow/
 
 **Positioning:** Langfuse is the storage layer; PromptFlow is the editor.
+
+**Deployment model:**
+- **Marketing/discovery:** Static GitHub Pages site (no runtime server)
+- **Product app:** Self-hosted Next.js app (clone and run locally or deploy to Vercel/your infrastructure)
 
 ## Quick Start
 
@@ -48,13 +53,20 @@ bunx turbo run build --filter=mcp-server
 
 ```
 promptflow/
+├── site/             — Static marketing site for GitHub Pages
+│   ├── index.html    — Marketing landing page
+│   ├── style.css     — Design system CSS (based on app tokens)
+│   ├── llms.txt      — AI agent discovery
+│   ├── robots.txt    — Crawler permissions
+│   └── .well-known/  — ai-catalog.json, mcp/server-card.json
+│
 ├── apps/
-│   ├── web/          — Next.js 16 App Router, Tailwind 4, shadcn-style components
+│   ├── web/          — Next.js 16 App Router, Tailwind 4, shadcn-style components (SELF-HOSTED)
 │   │   ├── src/app/
-│   │   │   ├── (marketing)/  — Public landing page (/)
-│   │   │   ├── (app)/         — Auth-required app routes (/prompts, /settings)
 │   │   │   ├── api/           — API routes (Auth.js, playground streaming, prompts CRUD)
-│   │   │   └── globals.css    — Design system tokens (6 theme families, 5 style variants)
+│   │   │   ├── prompts/       — Prompt management UI
+│   │   │   ├── settings/      — Settings pages
+│   │   │   └── page.tsx       — Root redirects to /prompts
 │   │   ├── src/components/    — UI primitives (shadcn-style, Base UI)
 │   │   ├── src/lib/           — Langfuse client, OpenRouter, utilities
 │   │   └── src/proxy.ts       — Auth.js v5 middleware (optional Google sign-in)
@@ -88,19 +100,22 @@ PromptFlow layers **namespace conventions** on Langfuse's plain-string tags:
 Defined in: `packages/core/src/tag-namespaces.ts`
 
 ### Route Groups (Web App)
-- `(marketing)/` — Public landing page, no `AppHeader`, no auth required
-- `(app)/` — Authenticated app routes, includes `AppHeader` with Langfuse/provider status
-
-Both share the root layout (`app/layout.tsx`) for theme/font providers.
+The self-hosted web app (`apps/web`) uses a simple structure:
+- Root `/` redirects to `/prompts` (primary app entry point)
+- `/prompts/*` — Prompt management UI
+- `/settings/*` — Settings pages
+- All routes share the root layout with theme/font providers and AppHeader
 
 ### Auth Strategy
 - **Default:** Open access (no sign-in)
 - **Optional:** Google OAuth via Auth.js v5 (JWT, no database)
   - Enable by setting `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
   - Restrict with `AUTH_ALLOWED_EMAILS` and/or `AUTH_ALLOWED_EMAIL_DOMAINS`
-- **Public paths when auth enabled:** `/`, `/sign-in`, `/api/auth`, `/llms.txt`, `/robots.txt`, `/.well-known/*`
+- **Public paths when auth enabled:** `/sign-in`, `/api/auth`
 
 Middleware: `apps/web/src/proxy.ts`
+
+**Note:** The marketing site (GitHub Pages) is separate and always public.
 
 ### Playground Streaming
 Two provider modes (env-selected):
@@ -276,15 +291,15 @@ promptflow prompts list
 
 ## AI Agent Discovery
 
-PromptFlow is **discoverable by AI agents** via standard conventions:
+PromptFlow is **discoverable by AI agents** via standard conventions on the GitHub Pages marketing site:
 
-- **`/llms.txt`** — Curated index (what/why/how/links)
+- **`/llms.txt`** — Curated index (what/why/how/links) at https://martinw.github.io/promptflow/llms.txt
 - **`/.well-known/ai-catalog.json`** — ARD-style catalog (specVersion 1.0)
 - **`/.well-known/mcp/server-card.json`** — MCP server metadata card
 - **`/robots.txt`** — Allows major AI crawlers (GPTBot, ClaudeBot, etc.)
-- **`AGENTS.md`** (this file) — Developer/agent guide
+- **`AGENTS.md`** (this file, in repo root) — Developer/agent guide
 
-When auth is enabled, these paths remain public via `proxy.ts` middleware.
+The marketing site is static HTML/CSS hosted on GitHub Pages. The self-hosted app is separate.
 
 ## Contributing
 
