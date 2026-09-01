@@ -238,6 +238,118 @@ export default function MarketingPage() {
         </div>
       </section>
 
+      {/* Use with Agents / MCP */}
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-4xl px-6 py-16 md:py-20">
+          <div className="space-y-8">
+            <div className="text-center space-y-2">
+              <h2 className="font-heading text-3xl md:text-4xl font-semibold tracking-tight">
+                Use with AI Agents
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Your Langfuse prompts become first-class MCP Prompts that host LLMs can invoke by
+                name.
+              </p>
+            </div>
+            <div className="space-y-6">
+              <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+                <h3 className="font-semibold text-lg">MCP Server</h3>
+                <p className="text-sm text-muted-foreground">
+                  Register <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">@promptflow/mcp-server</code> with
+                  Claude Desktop, Cursor, or other MCP clients. Your prompts become invocable
+                  with version pinning, auto-discovered arguments, and built-in search tools.
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-sm font-medium mb-2">Claude Desktop</div>
+                    <pre className="text-xs bg-muted/50 rounded p-3 overflow-x-auto">
+{`{
+  "mcpServers": {
+    "promptflow": {
+      "command": "npx",
+      "args": ["-y", "@promptflow/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-...",
+        "LANGFUSE_HOST": "https://cloud.langfuse.com"
+      }
+    }
+  }
+}`}
+                    </pre>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Config path: <code className="px-1 py-0.5 rounded bg-muted font-mono">~/Library/Application Support/Claude/claude_desktop_config.json</code> (macOS)
+                    </p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-2">Cursor</div>
+                    <pre className="text-xs bg-muted/50 rounded p-3 overflow-x-auto">
+{`{
+  "mcpServers": {
+    "promptflow": {
+      "command": "npx",
+      "args": ["-y", "@promptflow/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-..."
+      }
+    }
+  }
+}`}
+                    </pre>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Config path: <code className="px-1 py-0.5 rounded bg-muted font-mono">~/.cursor/mcp.json</code>
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded p-3 text-sm">
+                  <strong className="text-amber-600 dark:text-amber-400">Status:</strong> Built
+                  and tested locally; not yet published to npm. Until published, clone the repo,
+                  run{" "}
+                  <code className="px-1 py-0.5 rounded bg-muted font-mono text-xs">
+                    bun install && bunx turbo run build --filter=mcp-server
+                  </code>
+                  , and point your config at{" "}
+                  <code className="px-1 py-0.5 rounded bg-muted font-mono text-xs">
+                    /absolute/path/to/promptflow/apps/mcp-server/dist/index.js
+                  </code>
+                  .
+                </div>
+                <div className="flex gap-3">
+                  <a
+                    href="https://github.com/MartinW/promptflow/tree/main/apps/mcp-server"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                      "text-xs",
+                    )}
+                  >
+                    MCP Server README
+                  </a>
+                  <a
+                    href="/llms.txt"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  >
+                    <span>/llms.txt</span>
+                  </a>
+                  <a
+                    href="/.well-known/mcp/server-card.json"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  >
+                    <span>MCP server card</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Tag Conventions */}
       <section className="border-b border-border">
         <div className="mx-auto max-w-4xl px-6 py-16 md:py-20">

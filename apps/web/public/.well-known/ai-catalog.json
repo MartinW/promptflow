@@ -1,0 +1,34 @@
+{
+  "specVersion": "1.0",
+  "name": "PromptFlow",
+  "description": "A better UI for Langfuse prompt management with tag-first organization, integrated playground, and MCP server",
+  "host": {
+    "name": "Martin Wright",
+    "url": "https://github.com/MartinW"
+  },
+  "repository": "https://github.com/MartinW/promptflow",
+  "entries": [
+    {
+      "type": "mcp-server",
+      "name": "@promptflow/mcp-server",
+      "description": "MCP server exposing your Langfuse prompts as invocable MCP Prompts",
+      "serverCard": "/.well-known/mcp/server-card.json",
+      "repository": "https://github.com/MartinW/promptflow",
+      "npm": "@promptflow/mcp-server",
+      "status": "unpublished",
+      "note": "Built and tested locally; not yet published to npm. Use local path until published."
+    },
+    {
+      "type": "documentation",
+      "name": "PromptFlow Repository",
+      "description": "Main repository with web app, CLI, MCP server, and core packages",
+      "url": "https://github.com/MartinW/promptflow"
+    },
+    {
+      "type": "documentation",
+      "name": "Agent Development Guide",
+      "description": "AGENTS.md - how to develop, run, and understand the PromptFlow architecture",
+      "url": "https://github.com/MartinW/promptflow/blob/main/AGENTS.md"
+    }
+  ]
+}

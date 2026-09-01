@@ -1,0 +1,84 @@
+# PromptFlow
+
+A better UI for Langfuse prompt management.
+
+## What is PromptFlow?
+
+PromptFlow is a tag-first authoring UI and integrated playground for Langfuse prompts. It's part of an open-core ecosystem that includes:
+
+- **Web app** — Next.js authoring interface with live playground
+- **CLI** — Terminal-based prompt management (`@promptflow/cli`)
+- **MCP server** — Your Langfuse prompts as invocable MCP Prompts (`@promptflow/mcp-server`)
+
+## Positioning
+
+> Langfuse is the storage layer. PromptFlow is the editor.
+
+PromptFlow doesn't replace Langfuse — it augments it with:
+- Tag-first organization (filter by `voice:*`, `image:*`, `eval:*`, `app:*`, `lang:*`)
+- Integrated playground with streaming, token counts, cost estimation
+- Authoring UI with inline diff viewer and version control
+- Draft-by-default workflow with explicit "Promote to production"
+
+## MCP Server
+
+Your Langfuse prompts become first-class MCP Prompts that host LLMs can invoke by name.
+
+**Status:** Built and tested; not yet published to npm. Use local path until published.
+
+**Install (once published):**
+```bash
+# Claude Desktop config (~/.config/Claude/claude_desktop_config.json or ~/Library/Application Support/Claude/claude_desktop_config.json)
+{
+  "mcpServers": {
+    "promptflow": {
+      "command": "npx",
+      "args": ["-y", "@promptflow/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-...",
+        "LANGFUSE_HOST": "https://cloud.langfuse.com"
+      }
+    }
+  }
+}
+```
+
+**Until published, use local path:**
+1. Clone: `git clone https://github.com/MartinW/promptflow.git`
+2. Build: `cd promptflow && bun install && bunx turbo run build --filter=mcp-server`
+3. Point config at: `/absolute/path/to/promptflow/apps/mcp-server/dist/index.js`
+
+See: https://github.com/MartinW/promptflow/tree/main/apps/mcp-server
+
+## Tag Conventions
+
+PromptFlow layers conventions on Langfuse's plain-string tags:
+
+- `voice:*` — TTS-optimized templates (e.g., `voice:greeting`)
+- `image:*` — Image-generation templates (e.g., `image:product-shot`)
+- `eval:*` — LLM-as-judge templates (e.g., `eval:helpfulness`)
+- `app:*` — Scope to consumer app (e.g., `app:cadence:greeting`)
+- `lang:*` — Locale (e.g., `lang:en-GB`)
+
+Tags compose via AND semantics.
+
+## Links
+
+- Repository: https://github.com/MartinW/promptflow
+- MCP server: https://github.com/MartinW/promptflow/tree/main/apps/mcp-server
+- CLI: https://github.com/MartinW/promptflow/tree/main/apps/cli
+- Architecture: See AGENTS.md in repo root
+
+## License
+
+- Root packages: MIT
+- Enterprise (`ee/`): Business Source License 1.1 → Apache 2.0 after 4 years
+- Mirrors the Langfuse open-core model
+
+## For Agents
+
+- Discovery files: /llms.txt (this file), /.well-known/ai-catalog.json, /.well-known/mcp/server-card.json
+- MCP server card: /.well-known/mcp/server-card.json
+- Developer guide: AGENTS.md in repo root
+- Crawling: robots.txt allows major AI crawlers

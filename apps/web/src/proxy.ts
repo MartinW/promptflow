@@ -6,6 +6,10 @@ export default authEnabled
       const isPublic =
         pathname === "/" ||
         pathname === "/sign-in" ||
+        pathname === "/llms.txt" ||
+        pathname === "/llms-full.txt" ||
+        pathname === "/robots.txt" ||
+        pathname.startsWith("/.well-known/") ||
         pathname.startsWith("/api/auth");
       if (!req.auth && !isPublic) {
         const url = new URL("/sign-in", req.nextUrl.origin);
