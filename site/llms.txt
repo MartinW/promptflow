@@ -66,6 +66,7 @@ Tags compose via AND semantics.
 ## Links
 
 - Repository: https://github.com/MartinW/promptflow
+- Documentation: https://martinw.github.io/promptflow/docs/ (or relative: docs/)
 - MCP server: https://github.com/MartinW/promptflow/tree/main/apps/mcp-server
 - CLI: https://github.com/MartinW/promptflow/tree/main/apps/cli
 - Architecture: See AGENTS.md in repo root
@@ -79,6 +80,8 @@ Tags compose via AND semantics.
 ## For Agents
 
 - Discovery files: /llms.txt (this file), /.well-known/ai-catalog.json, /.well-known/mcp/server-card.json
+- Marketing site: https://martinw.github.io/promptflow/
+- Documentation: https://martinw.github.io/promptflow/docs/
 - MCP server card: /.well-known/mcp/server-card.json
 - Developer guide: AGENTS.md in repo root
 - Crawling: robots.txt allows major AI crawlers

@@ -299,7 +299,12 @@ PromptFlow is **discoverable by AI agents** via standard conventions on the GitH
 - **`/robots.txt`** — Allows major AI crawlers (GPTBot, ClaudeBot, etc.)
 - **`AGENTS.md`** (this file, in repo root) — Developer/agent guide
 
-The marketing site is static HTML/CSS hosted on GitHub Pages. The self-hosted app is separate.
+**GitHub Pages layout:**
+- Marketing site: https://martinw.github.io/promptflow/
+- Documentation: https://martinw.github.io/promptflow/docs/ (Docusaurus)
+- Discovery files at marketing root
+
+The marketing site is static HTML/CSS. The self-hosted app is separate.
 
 ## Contributing
 

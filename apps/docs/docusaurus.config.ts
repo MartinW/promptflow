@@ -6,7 +6,7 @@ const config: Config = {
   title: "PromptFlow",
   tagline: "A better UI for Langfuse prompt management",
   url: "https://martinw.github.io",
-  baseUrl: "/promptflow/",
+  baseUrl: "/promptflow/docs/",
   onBrokenLinks: "throw",
   i18n: {
     defaultLocale: "en",
@@ -32,6 +32,11 @@ const config: Config = {
     navbar: {
       title: "PromptFlow",
       items: [
+        {
+          href: "https://martinw.github.io/promptflow/",
+          label: "Home",
+          position: "left",
+        },
         {
           href: "https://github.com/MartinW/promptflow",
           label: "GitHub",
