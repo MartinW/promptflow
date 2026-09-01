@@ -1,8 +1,11 @@
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
+import { requireAuth } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+export async function GET(req: Request): Promise<Response> {
+  const authResult = await requireAuth(req.headers.get("host"));
+  if (authResult instanceof Response) return authResult;
   if (!isLangfuseConfigured()) {
     return Response.json({ data: [] });
   }
