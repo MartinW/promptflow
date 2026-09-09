@@ -3,6 +3,7 @@ import { pickProvider, streamViaVercel } from "@/lib/aiprovider";
 import { getServerClient, isLangfuseConfigured } from "@/lib/server-client";
 import { langfuseSpanProcessor } from "@/instrumentation";
 import { startObservation, LangfuseOtelSpanAttributes, type LangfuseGenerationAttributes } from "@langfuse/tracing";
+import { requireAuth } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,9 @@ interface OpenRouterChunk {
  *   { type: "error", message: string }       — fatal error mid-stream
  */
 export async function POST(req: Request): Promise<Response> {
+  const authResult = await requireAuth(req.headers.get("host"));
+  if (authResult instanceof Response) return authResult;
+
   let body: RunBody;
   try {
     body = (await req.json()) as RunBody;

@@ -1,15 +1,17 @@
 import { redirect } from "next/navigation";
 import { authEnabled, signIn } from "@/auth";
+import { sanitizeRedirect } from "@/lib/auth-guard";
 
 type SignInPageProps = {
   searchParams: Promise<{ error?: string; redirectTo?: string }>;
 };
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
-  const { error, redirectTo = "/prompts" } = await searchParams;
+  const { error, redirectTo } = await searchParams;
+  const safeRedirect = sanitizeRedirect(redirectTo, "/prompts");
 
   if (!authEnabled) {
-    redirect(redirectTo);
+    redirect(safeRedirect);
   }
 
   return (
@@ -27,7 +29,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <form
           action={async () => {
             "use server";
-            await signIn("google", { redirectTo });
+            await signIn("google", { redirectTo: safeRedirect });
           }}
         >
           <button

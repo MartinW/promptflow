@@ -8,8 +8,10 @@ import {
 } from "@promptflow/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { buildSaveInput, type ComposeShape } from "@/lib/prompt-shape";
 import { getServerClient } from "@/lib/server-client";
+import { requireAuth } from "@/lib/auth-guard";
 
 export interface CreatePromptResult {
   ok: boolean;
@@ -39,6 +41,12 @@ export interface RenamePromptResult {
 const NAME_PATTERN = /^[a-zA-Z0-9._:/-]+$/;
 
 export async function createPromptAction(formData: FormData): Promise<CreatePromptResult> {
+  const headersList = await headers();
+  const authResult = await requireAuth(headersList.get("host"));
+  if (authResult instanceof Response) {
+    return { ok: false, error: "Authentication required" };
+  }
+
   const name = String(formData.get("name") ?? "").trim();
   const shape = readShape(formData);
   const tagsRaw = String(formData.get("tags") ?? "");
@@ -79,6 +87,12 @@ export async function createPromptAction(formData: FormData): Promise<CreateProm
 }
 
 export async function updatePromptAction(formData: FormData): Promise<CreatePromptResult> {
+  const headersList = await headers();
+  const authResult = await requireAuth(headersList.get("host"));
+  if (authResult instanceof Response) {
+    return { ok: false, error: "Authentication required" };
+  }
+
   const name = String(formData.get("name") ?? "").trim();
   const shape = readShape(formData);
   const tagsRaw = String(formData.get("tags") ?? "");
@@ -118,6 +132,12 @@ export async function updatePromptAction(formData: FormData): Promise<CreateProm
  * prompt carries the `production` label; this action just executes the delete.
  */
 export async function deletePromptAction(formData: FormData): Promise<DeletePromptResult> {
+  const headersList = await headers();
+  const authResult = await requireAuth(headersList.get("host"));
+  if (authResult instanceof Response) {
+    return { ok: false, error: "Authentication required" };
+  }
+
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { ok: false, error: "Missing prompt name" };
 
@@ -148,6 +168,12 @@ export async function deletePromptAction(formData: FormData): Promise<DeleteProm
  * re-promote the new prompt — consistent with PromptFlow's promotion semantics.
  */
 export async function renamePromptAction(formData: FormData): Promise<RenamePromptResult> {
+  const headersList = await headers();
+  const authResult = await requireAuth(headersList.get("host"));
+  if (authResult instanceof Response) {
+    return { ok: false, error: "Authentication required" };
+  }
+
   const oldName = String(formData.get("oldName") ?? "").trim();
   const newName = String(formData.get("newName") ?? "").trim();
   const convertToChatRaw = formData.get("convertToChat") === "on";
