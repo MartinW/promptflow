@@ -19,6 +19,9 @@ export async function AppHeader() {
             <Link href="/prompts" className="hover:text-foreground transition-colors">
               Prompts
             </Link>
+            <Link href="/skills" className="hover:text-foreground transition-colors">
+              Skills
+            </Link>
             <Link href="/settings" className="hover:text-foreground transition-colors">
               Settings
             </Link>

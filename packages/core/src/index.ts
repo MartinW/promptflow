@@ -30,6 +30,18 @@ export type { GraphNode, PromptBody, ReferenceGraph } from "./reference-graph";
 export { buildReferenceGraph, subgraphFor } from "./reference-graph";
 export type { SSMLValidationResult } from "./ssml";
 export { validateSSML } from "./ssml";
+export type {
+  CreateSkillVersionInput,
+  ListSkillsFilter,
+  SkillFile,
+  SkillFrontmatter,
+  SkillMeta,
+  SkillsClient,
+  SkillsClientConfig,
+  SkillVersion,
+  SkillVersionFileInput,
+} from "./skills";
+export { createSkillsClient, parseSkillFrontmatter } from "./skills";
 export type { Namespace, NamespaceColor, ParsedTag } from "./tags";
 export {
   formatTag,

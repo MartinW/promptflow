@@ -26,6 +26,16 @@ export function isPostHogEnvConfigured(): boolean {
   );
 }
 
+/**
+ * Langfuse's Skills API has no PostHog equivalent — skills are only
+ * available when the active project is Langfuse-backed. Callers check this
+ * up front (rather than throw/catch) since "wrong provider" is an expected,
+ * common case here, not an error.
+ */
+export function isSkillsSupported(id: ProjectId): boolean {
+  return id === "langfuse";
+}
+
 export function getConfiguredProjects(): ProjectSummary[] {
   return [
     { id: "langfuse", label: "Langfuse", configured: isLangfuseEnvConfigured() },
