@@ -1,13 +1,14 @@
 "use client";
 
 import { parseSkillFrontmatter } from "@promptflow/core";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createSkillVersionAction } from "../actions";
+import { MAX_ZIP_BYTES, parseSkillZip } from "./parse-zip";
 
 const TEMPLATE = `---
 name: skill-name
@@ -29,6 +30,38 @@ export function NewSkillForm() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
+  const [zipPending, setZipPending] = useState(false);
+  const zipInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleZipChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file after an error
+    if (!file) return;
+
+    if (file.size > MAX_ZIP_BYTES) {
+      toast.error("ZIP too large", {
+        description: `${file.name} is ${(file.size / (1024 * 1024)).toFixed(1)} MiB — Langfuse's limit is 3 MiB before extraction.`,
+      });
+      return;
+    }
+
+    setZipPending(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const parsed = parseSkillZip(buffer);
+      setSkillMd(parsed.skillMd);
+      setExtraFiles(parsed.files);
+      setFieldErrors({});
+      const skippedNote = parsed.skipped.length > 0 ? ` (${parsed.skipped.length} file(s) skipped)` : "";
+      toast.success(`Imported SKILL.md + ${parsed.files.length} file(s) from ${file.name}${skippedNote}`);
+    } catch (err) {
+      toast.error("Couldn't read ZIP", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setZipPending(false);
+    }
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -73,6 +106,29 @@ export function NewSkillForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-5 space-y-5">
+        <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-border p-3">
+          <p className="text-xs text-muted-foreground">
+            Have a skill folder already? Upload a <span className="font-mono">.zip</span> containing{" "}
+            <span className="font-mono">SKILL.md</span> (and any supporting files) to fill in the form below.
+          </p>
+          <input
+            ref={zipInputRef}
+            type="file"
+            accept=".zip,application/zip"
+            className="hidden"
+            onChange={handleZipChange}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => zipInputRef.current?.click()}
+            disabled={pending || zipPending}
+          >
+            {zipPending ? "Reading..." : "Upload ZIP"}
+          </Button>
+        </div>
+
         <Field label="SKILL.md" hint="Must start with a --- frontmatter block (name, description)" error={fieldErrors.skillMd}>
           <Textarea
             value={skillMd}
