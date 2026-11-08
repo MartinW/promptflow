@@ -61,6 +61,56 @@ export async function createSkillVersionAction(formData: FormData): Promise<Skil
   redirect(`/skills/${encodeURIComponent(name)}?v=${newVersion}`);
 }
 
+export interface ImportSkillInput {
+  skillMd: string;
+  files: SkillVersionFileInput[];
+  commitMessage?: string;
+}
+
+export interface ImportSkillResult {
+  /** Frontmatter name, or `null` if this entry's SKILL.md frontmatter was invalid. */
+  name: string | null;
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Bulk-import skills detected from a multi-skill ZIP (see `parse-zip.ts`).
+ * Takes a plain array rather than `FormData` — this has no HTML form behind
+ * it (the ZIP is parsed client-side), so there's no progressive-enhancement
+ * benefit to the FormData convention the single-skill actions use.
+ *
+ * Each entry is created independently; one failing doesn't stop the rest.
+ */
+export async function importSkillsAction(skills: ImportSkillInput[]): Promise<ImportSkillResult[]> {
+  const client = await getServerSkillsClient();
+  const results: ImportSkillResult[] = [];
+
+  for (const skill of skills) {
+    const frontmatter = parseSkillFrontmatter(skill.skillMd);
+    if (!frontmatter) {
+      results.push({
+        name: null,
+        ok: false,
+        error: "SKILL.md must start with a --- frontmatter block containing name and description",
+      });
+      continue;
+    }
+    try {
+      await client.createSkillVersion({
+        files: [{ path: "SKILL.md", content: skill.skillMd }, ...skill.files],
+        commitMessage: skill.commitMessage,
+      });
+      results.push({ name: frontmatter.name, ok: true });
+    } catch (err) {
+      results.push({ name: frontmatter.name, ok: false, error: formatError(err) });
+    }
+  }
+
+  revalidatePath("/skills");
+  return results;
+}
+
 export async function promoteSkillVersionAction(formData: FormData): Promise<SkillActionResult> {
   const name = String(formData.get("name") ?? "").trim();
   const versionRaw = String(formData.get("version") ?? "");

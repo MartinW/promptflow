@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createSkillVersionAction } from "../actions";
-import { MAX_ZIP_BYTES, parseSkillZip } from "./parse-zip";
+import { ImportReview } from "./import-review";
+import { MAX_ZIP_BYTES, type ParsedSkillZip, parseSkillZip } from "./parse-zip";
 
 const TEMPLATE = `---
 name: skill-name
@@ -31,6 +32,7 @@ export function NewSkillForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
   const [zipPending, setZipPending] = useState(false);
+  const [multiImport, setMultiImport] = useState<ParsedSkillZip | null>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
 
   async function handleZipChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -49,11 +51,20 @@ export function NewSkillForm() {
     try {
       const buffer = await file.arrayBuffer();
       const parsed = parseSkillZip(buffer);
-      setSkillMd(parsed.skillMd);
-      setExtraFiles(parsed.files);
+
+      if (parsed.skills.length > 1) {
+        // Multiple SKILL.md found — hand off to the review/select screen
+        // instead of guessing which one to drop into the single-skill form.
+        setMultiImport(parsed);
+        return;
+      }
+
+      const [skill] = parsed.skills;
+      setSkillMd(skill.skillMd);
+      setExtraFiles(skill.files);
       setFieldErrors({});
       const skippedNote = parsed.skipped.length > 0 ? ` (${parsed.skipped.length} file(s) skipped)` : "";
-      toast.success(`Imported SKILL.md + ${parsed.files.length} file(s) from ${file.name}${skippedNote}`);
+      toast.success(`Imported SKILL.md + ${skill.files.length} file(s) from ${file.name}${skippedNote}`);
     } catch (err) {
       toast.error("Couldn't read ZIP", {
         description: err instanceof Error ? err.message : String(err),
@@ -103,13 +114,24 @@ export function NewSkillForm() {
     setExtraFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
+  if (multiImport) {
+    return (
+      <ImportReview
+        skills={multiImport.skills}
+        skippedCount={multiImport.skipped.length}
+        onCancel={() => setMultiImport(null)}
+      />
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-5 space-y-5">
         <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-border p-3">
           <p className="text-xs text-muted-foreground">
             Have a skill folder already? Upload a <span className="font-mono">.zip</span> containing{" "}
-            <span className="font-mono">SKILL.md</span> (and any supporting files) to fill in the form below.
+            <span className="font-mono">SKILL.md</span> (and any supporting files) to fill in the form
+            below — or a ZIP with multiple skill folders to review and import several at once.
           </p>
           <input
             ref={zipInputRef}
@@ -175,7 +197,7 @@ export function NewSkillForm() {
         </div>
         {extraFiles.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Optional. Add any additional files referenced from SKILL.md's instructions.
+            Optional. Add any additional files referenced from SKILL.md&apos;s instructions.
           </p>
         ) : null}
         {extraFiles.map((file, i) => (
@@ -206,7 +228,7 @@ export function NewSkillForm() {
 
       {error ? (
         <Card className="px-5 py-4 border-red-500/30 bg-red-500/5 text-sm">
-          <p className="font-medium text-red-600 dark:text-red-400">Couldn't create skill</p>
+          <p className="font-medium text-red-600 dark:text-red-400">Couldn&apos;t create skill</p>
           <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1 font-mono break-all">{error}</p>
         </Card>
       ) : null}
