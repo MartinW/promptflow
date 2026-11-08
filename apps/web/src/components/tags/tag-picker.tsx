@@ -14,6 +14,10 @@ interface TagPickerProps {
   /** Hidden field name for traditional form submission. Set to enable a hidden `<input name>` with the joined value. */
   name?: string;
   className?: string;
+  /** Tag-suggestion endpoint, shaped `{ tags: Array<{ value: string }> }`. */
+  fetchUrl?: string;
+  /** Seed suggestions with the known prompt namespace prefixes (voice:, image:, …). Off for non-prompt uses. */
+  suggestNamespaces?: boolean;
 }
 
 const KNOWN_NAMESPACE_PREFIXES = Object.values(Namespaces).map((ns) => `${ns}:`);
@@ -35,12 +39,14 @@ export function TagPicker({
   placeholder = "voice, env:prod",
   name,
   className,
+  fetchUrl = "/api/prompts/tags",
+  suggestNamespaces = true,
 }: TagPickerProps) {
   const [allTags, setAllTags] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/prompts/tags")
+    fetch(fetchUrl)
       .then((r) => r.json())
       .then((data: { tags?: Array<{ value: string }> }) => {
         if (cancelled) return;
@@ -53,15 +59,17 @@ export function TagPicker({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [fetchUrl]);
 
   const suggestions = useMemo(() => {
     const merged = new Set<string>(allTags);
-    for (const prefix of KNOWN_NAMESPACE_PREFIXES) merged.add(prefix);
+    if (suggestNamespaces) {
+      for (const prefix of KNOWN_NAMESPACE_PREFIXES) merged.add(prefix);
+    }
     // Don't suggest values already selected.
     for (const v of value) merged.delete(v);
     return Array.from(merged).sort();
-  }, [allTags, value]);
+  }, [allTags, value, suggestNamespaces]);
 
   return (
     <div className={cn("relative", className)}>

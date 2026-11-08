@@ -43,7 +43,7 @@ export function SkillMdViewer({ body }: SkillMdViewerProps) {
         </div>
       </div>
       {mode === "preview" ? (
-        <div className="p-4 prose prose-sm dark:prose-invert max-w-none">
+        <div className="p-4 prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-li:leading-7 prose-pre:leading-6">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
         </div>
       ) : (

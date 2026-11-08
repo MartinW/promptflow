@@ -1,10 +1,11 @@
-import { PromptFlowError, type SkillMeta } from "@promptflow/core";
+import { matchesTags, PromptFlowError, type SkillMeta } from "@promptflow/core";
 import Link from "next/link";
 import { TagBadge } from "@/components/tags/tag-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getActiveProjectId, getServerSkillsClient, isActiveProjectConfigured } from "@/lib/server-client";
 import { isSkillsSupported } from "@/lib/projects";
+import { SkillsFilterToolbar } from "./filter-toolbar";
 import { SkillsSearchInput } from "./search-input";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
 interface SearchParams {
   q?: string;
   tag?: string;
+  mode?: string;
 }
 
 export default async function SkillsPage({
@@ -30,13 +32,17 @@ export default async function SkillsPage({
 
   const params = await searchParams;
   const query = params.q?.trim();
-  const tag = params.tag?.trim();
+  const selectedTags = parseTagsParam(params.tag);
+  const mode: "and" | "or" = params.mode === "or" ? "or" : "and";
 
   let skills: SkillMeta[] = [];
   let error: string | null = null;
   try {
     const client = await getServerSkillsClient();
-    skills = await client.listSkills({ search: query || undefined, tag: tag || undefined, limit: 100 });
+    // The API's `tag` filter only takes one tag — multi-tag AND/OR matching
+    // (same semantics as the prompts list) is done client-side below, over
+    // a generous page. `search` (name/description substring) stays server-side.
+    skills = await client.listSkills({ search: query || undefined, limit: 100 });
   } catch (err) {
     error =
       err instanceof PromptFlowError
@@ -46,8 +52,10 @@ export default async function SkillsPage({
           : String(err);
   }
 
+  const filtered = skills.filter((s) => matchesTags(s.tags, selectedTags, mode));
+
   return (
-    <main className="mx-auto max-w-5xl px-6 py-8">
+    <main className="mx-auto max-w-6xl px-6 py-8">
       <header className="flex items-end justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Skills</h1>
@@ -60,15 +68,37 @@ export default async function SkillsPage({
         </Link>
       </header>
 
-      <div className="mb-4 max-w-xs">
-        <SkillsSearchInput initial={query ?? ""} />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_16rem]">
+        <section className="min-w-0">
+          <div className="mb-4 max-w-xs">
+            <SkillsSearchInput initial={query ?? ""} />
+          </div>
+
+          {error ? <ErrorBanner message={error} /> : null}
+
+          {filtered.length === 0 ? (
+            <EmptyState hasFilter={Boolean(query) || selectedTags.length > 0} />
+          ) : (
+            <SkillsList skills={filtered} />
+          )}
+        </section>
+
+        <aside className="md:sticky md:top-4 md:self-start">
+          <Card className="p-3">
+            <SkillsFilterToolbar tags={selectedTags} mode={mode} />
+          </Card>
+        </aside>
       </div>
-
-      {error ? <ErrorBanner message={error} /> : null}
-
-      {skills.length === 0 ? <EmptyState hasFilter={Boolean(query || tag)} /> : <SkillsList skills={skills} />}
     </main>
   );
+}
+
+function parseTagsParam(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
 }
 
 function SkillsList({ skills }: { skills: SkillMeta[] }) {

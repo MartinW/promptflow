@@ -12,6 +12,8 @@ interface TagFilterBarProps {
   mode: "and" | "or";
   onModeChange: (next: "and" | "or") => void;
   className?: string;
+  fetchUrl?: string;
+  suggestNamespaces?: boolean;
 }
 
 /**
@@ -25,6 +27,8 @@ export function TagFilterBar({
   mode,
   onModeChange,
   className,
+  fetchUrl,
+  suggestNamespaces,
 }: TagFilterBarProps) {
   return (
     <div className={cn("space-y-2", className)}>
@@ -55,6 +59,8 @@ export function TagFilterBar({
         onChange={onTagsChange}
         placeholder="Pick tags to filter…"
         className="w-full"
+        fetchUrl={fetchUrl}
+        suggestNamespaces={suggestNamespaces}
       />
       {tags.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5">
