@@ -1,11 +1,11 @@
-import { PromptFlowError, type SkillVersion } from "@promptflow/core";
+import { PromptFlowError, type SkillVersion, stripSkillFrontmatter } from "@promptflow/core";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { isSkillsSupported } from "@/lib/projects";
 import { getActiveProjectId, getServerSkillsClient, isActiveProjectConfigured } from "@/lib/server-client";
+import { SkillMdViewer } from "./skill-md-viewer";
 import { TagsForm } from "./tags-form";
 import { VersionRow } from "./version-row";
 
@@ -59,6 +59,8 @@ export default async function SkillDetailPage({
   }
 
   const allVersions = Array.from({ length: meta.latestVersion }, (_, i) => meta.latestVersion - i);
+  const skillMdFile = skill.files.find((f) => f.path === "SKILL.md");
+  const otherFiles = skill.files.filter((f) => f.path !== "SKILL.md");
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -91,31 +93,44 @@ export default async function SkillDetailPage({
           ))}
         </div>
         {skill.commitMessage ? (
-          <p className="text-sm text-muted-foreground mt-3 italic">"{skill.commitMessage}"</p>
+          <p className="text-sm text-muted-foreground mt-3 italic">&quot;{skill.commitMessage}&quot;</p>
         ) : null}
         <div className="mt-4">
           <TagsForm name={skill.name} initialTags={skill.tags} />
         </div>
       </header>
 
+      <section className="mb-8">
+        <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Frontmatter</h2>
+        <FrontmatterCard frontmatter={skill.frontmatter} />
+      </section>
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-8">
-        <section>
-          <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            Files ({skill.files.length})
-          </h2>
-          <div className="space-y-4">
-            {skill.files.map((file) => (
-              <Card key={file.id} className="overflow-hidden">
-                <div className="px-4 py-2 border-b border-border text-xs font-mono text-muted-foreground flex items-center justify-between">
-                  <span>{file.path}</span>
-                  <span>{file.contentLength} bytes</span>
-                </div>
-                <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-words leading-6 max-h-96 overflow-y-auto">
-                  {file.content ?? "(content not loaded)"}
-                </pre>
-              </Card>
-            ))}
-          </div>
+        <section className="space-y-6">
+          {skillMdFile ? (
+            <SkillMdViewer body={stripSkillFrontmatter(skillMdFile.content ?? "")} />
+          ) : null}
+
+          {otherFiles.length > 0 ? (
+            <div>
+              <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                Supporting files ({otherFiles.length})
+              </h2>
+              <div className="space-y-4">
+                {otherFiles.map((file) => (
+                  <Card key={file.id} className="overflow-hidden">
+                    <div className="px-4 py-2 border-b border-border text-xs font-mono text-muted-foreground flex items-center justify-between">
+                      <span>{file.path}</span>
+                      <span>{file.contentLength} bytes</span>
+                    </div>
+                    <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-words leading-6 max-h-96 overflow-y-auto">
+                      {file.content ?? "(content not loaded)"}
+                    </pre>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <aside>
@@ -131,17 +146,38 @@ export default async function SkillDetailPage({
               />
             ))}
           </Card>
-          <Separator className="my-6" />
-          <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Frontmatter</h2>
-          <Card className="p-3">
-            <pre className="text-xs font-mono whitespace-pre-wrap break-all leading-5">
-              {JSON.stringify(skill.frontmatter ?? {}, null, 2)}
-            </pre>
-          </Card>
         </aside>
       </div>
     </main>
   );
+}
+
+function FrontmatterCard({ frontmatter }: { frontmatter: unknown }) {
+  if (isPlainObject(frontmatter) && Object.keys(frontmatter).length > 0) {
+    return (
+      <Card className="p-4">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+          {Object.entries(frontmatter).map(([key, value]) => (
+            <div className="contents" key={key}>
+              <dt className="text-muted-foreground font-mono">{key}</dt>
+              <dd className="break-words">{typeof value === "string" ? value : JSON.stringify(value)}</dd>
+            </div>
+          ))}
+        </dl>
+      </Card>
+    );
+  }
+  return (
+    <Card className="p-3">
+      <pre className="text-xs font-mono whitespace-pre-wrap break-all leading-5">
+        {JSON.stringify(frontmatter ?? {}, null, 2)}
+      </pre>
+    </Card>
+  );
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function ErrorView({ name, error }: { name: string; error: unknown }) {
@@ -154,7 +190,7 @@ function ErrorView({ name, error }: { name: string; error: unknown }) {
   return (
     <main className="mx-auto max-w-2xl px-6 py-20">
       <Card className="p-8 space-y-3 border-red-500/30 bg-red-500/5">
-        <h1 className="text-lg font-semibold">Couldn't load skill</h1>
+        <h1 className="text-lg font-semibold">Couldn&apos;t load skill</h1>
         <p className="text-sm text-muted-foreground font-mono">{name}</p>
         <p className="text-xs text-red-600/80 dark:text-red-400/80 font-mono break-all">{message}</p>
       </Card>

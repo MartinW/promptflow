@@ -125,9 +125,9 @@ function NotSupported() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-20">
       <Card className="p-8 space-y-4">
-        <h1 className="text-xl font-semibold">Skills aren't available on PostHog</h1>
+        <h1 className="text-xl font-semibold">Skills aren&apos;t available on PostHog</h1>
         <p className="text-sm text-muted-foreground">
-          Langfuse's Skills API has no PostHog equivalent yet. Switch the active project to Langfuse
+          Langfuse&apos;s Skills API has no PostHog equivalent yet. Switch the active project to Langfuse
           in{" "}
           <Link href="/settings" className="underline">
             Settings

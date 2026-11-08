@@ -38,17 +38,22 @@ export default async function EditSkillPage({
 
   const client = await getServerSkillsClient();
 
-  let skillMd: string;
+  let skillMd: string | null = null;
+  let loadError: unknown = null;
   try {
     const skill = await client.getSkill(name, { version: fromVersion, includeContent: true });
     const file = skill.files.find((f) => f.path === "SKILL.md");
-    if (!file?.content) {
-      return <ErrorView name={name} error="SKILL.md not found on this version" />;
-    }
-    skillMd = file.content;
+    skillMd = file?.content ?? null;
   } catch (err) {
     if (err instanceof PromptFlowError && err.kind === "not_found") notFound();
-    return <ErrorView name={name} error={err} />;
+    loadError = err;
+  }
+
+  if (loadError) {
+    return <ErrorView name={name} error={loadError} />;
+  }
+  if (skillMd === null) {
+    return <ErrorView name={name} error="SKILL.md not found on this version" />;
   }
 
   return (
@@ -77,7 +82,7 @@ function ErrorView({ name, error }: { name: string; error: unknown }) {
   return (
     <main className="mx-auto max-w-2xl px-6 py-20">
       <Card className="p-8 space-y-3 border-red-500/30 bg-red-500/5">
-        <h1 className="text-lg font-semibold">Couldn't load skill</h1>
+        <h1 className="text-lg font-semibold">Couldn&apos;t load skill</h1>
         <p className="text-sm text-muted-foreground font-mono">{name}</p>
         <p className="text-xs text-red-600/80 dark:text-red-400/80 font-mono break-all">{message}</p>
       </Card>

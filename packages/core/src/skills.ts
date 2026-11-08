@@ -227,6 +227,17 @@ export function parseSkillFrontmatter(content: string): SkillFrontmatter | null 
   return { name, description };
 }
 
+/**
+ * Strip a leading `---\n...\n---` frontmatter block from `SKILL.md` content,
+ * returning just the body. Used when rendering the body on its own (the
+ * frontmatter is displayed separately) so it doesn't render as a stray
+ * markdown rule + two bare lines.
+ */
+export function stripSkillFrontmatter(content: string): string {
+  const match = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/.exec(content);
+  return match ? content.slice(match[0].length) : content;
+}
+
 function stripQuotes(value: string): string {
   if (
     (value.startsWith('"') && value.endsWith('"')) ||

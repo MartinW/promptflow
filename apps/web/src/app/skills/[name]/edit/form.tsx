@@ -132,7 +132,7 @@ export function EditSkillForm({
         </div>
         <p className="text-xs text-muted-foreground">
           Only new/changed files from this version need to be listed here — files from the previous
-          version aren't carried forward automatically if you need to reference them, re-add them.
+          version aren&apos;t carried forward automatically if you need to reference them, re-add them.
         </p>
         {extraFiles.map((file, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, no stable id until saved
@@ -162,7 +162,7 @@ export function EditSkillForm({
 
       {error ? (
         <Card className="px-5 py-4 border-red-500/30 bg-red-500/5 text-sm">
-          <p className="font-medium text-red-600 dark:text-red-400">Couldn't publish version</p>
+          <p className="font-medium text-red-600 dark:text-red-400">Couldn&apos;t publish version</p>
           <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1 font-mono break-all">{error}</p>
         </Card>
       ) : null}

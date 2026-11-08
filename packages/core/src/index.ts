@@ -41,7 +41,7 @@ export type {
   SkillVersion,
   SkillVersionFileInput,
 } from "./skills";
-export { createSkillsClient, parseSkillFrontmatter } from "./skills";
+export { createSkillsClient, parseSkillFrontmatter, stripSkillFrontmatter } from "./skills";
 export type { Namespace, NamespaceColor, ParsedTag } from "./tags";
 export {
   formatTag,
