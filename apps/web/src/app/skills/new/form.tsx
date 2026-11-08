@@ -32,7 +32,9 @@ export function NewSkillForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
   const [zipPending, setZipPending] = useState(false);
-  const [multiImport, setMultiImport] = useState<ParsedSkillZip | null>(null);
+  const [multiImport, setMultiImport] = useState<{ parsed: ParsedSkillZip; fileName: string } | null>(
+    null,
+  );
   const zipInputRef = useRef<HTMLInputElement>(null);
 
   async function handleZipChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -52,10 +54,20 @@ export function NewSkillForm() {
       const buffer = await file.arrayBuffer();
       const parsed = parseSkillZip(buffer);
 
+      if (parsed.skipped.length > 0) {
+        // Internal detail (unsupported file type, unsafe path, or just not
+        // under any detected skill folder) — not worth a UI affordance, but
+        // logged so it's inspectable if something unexpected got dropped.
+        console.log(
+          `[skills import] ${parsed.skipped.length} file(s) from ${file.name} were skipped:`,
+          parsed.skipped,
+        );
+      }
+
       if (parsed.skills.length > 1) {
         // Multiple SKILL.md found — hand off to the review/select screen
         // instead of guessing which one to drop into the single-skill form.
-        setMultiImport(parsed);
+        setMultiImport({ parsed, fileName: file.name });
         return;
       }
 
@@ -63,8 +75,7 @@ export function NewSkillForm() {
       setSkillMd(skill.skillMd);
       setExtraFiles(skill.files);
       setFieldErrors({});
-      const skippedNote = parsed.skipped.length > 0 ? ` (${parsed.skipped.length} file(s) skipped)` : "";
-      toast.success(`Imported SKILL.md + ${skill.files.length} file(s) from ${file.name}${skippedNote}`);
+      toast.success(`Imported SKILL.md + ${skill.files.length} file(s) from ${file.name}`);
     } catch (err) {
       toast.error("Couldn't read ZIP", {
         description: err instanceof Error ? err.message : String(err),
@@ -117,8 +128,8 @@ export function NewSkillForm() {
   if (multiImport) {
     return (
       <ImportReview
-        skills={multiImport.skills}
-        skippedCount={multiImport.skipped.length}
+        skills={multiImport.parsed.skills}
+        fileName={multiImport.fileName}
         onCancel={() => setMultiImport(null)}
       />
     );

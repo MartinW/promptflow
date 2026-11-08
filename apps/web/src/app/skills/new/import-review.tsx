@@ -11,7 +11,8 @@ import type { DetectedSkill } from "./parse-zip";
 
 interface ImportReviewProps {
   skills: DetectedSkill[];
-  skippedCount: number;
+  /** Source ZIP's filename, used only to suggest a default group tag. */
+  fileName: string;
   onCancel: () => void;
 }
 
@@ -20,10 +21,17 @@ interface ImportReviewProps {
  * Mirrors Langfuse's own "Import skills" flow (detect → review → select →
  * import) rather than the single-skill form's inline-populate behaviour,
  * since there's no single set of form fields to populate here.
+ *
+ * Langfuse has no parent/child skill hierarchy — skill names are flat, with
+ * no path separator. The closest thing it offers for grouping several
+ * related skills (e.g. everything that shipped in one ZIP) is a shared tag,
+ * so that's what this applies on import rather than inventing a grouping
+ * concept the API doesn't have.
  */
-export function ImportReview({ skills, skippedCount, onCancel }: ImportReviewProps) {
+export function ImportReview({ skills, fileName, onCancel }: ImportReviewProps) {
   const importable = skills.filter((s) => s.frontmatter !== null);
   const [selected, setSelected] = useState<Set<string>>(new Set(importable.map((s) => s.root)));
+  const [groupTag, setGroupTag] = useState(() => suggestGroupTag(fileName));
   const [commitMessage, setCommitMessage] = useState("");
   const [results, setResults] = useState<Map<string, ImportSkillResult> | null>(null);
   const [pending, startTransition] = useTransition();
@@ -45,11 +53,14 @@ export function ImportReview({ skills, skippedCount, onCancel }: ImportReviewPro
     const toImport = importable.filter((s) => selected.has(s.root));
     if (toImport.length === 0) return;
 
+    const tags = groupTag.trim() ? [groupTag.trim()] : undefined;
+
     startTransition(async () => {
       const outcomes = await importSkillsAction(
         toImport.map((s) => ({
           skillMd: s.skillMd,
           files: s.files,
+          tags,
           commitMessage: commitMessage || undefined,
         })),
       );
@@ -75,17 +86,9 @@ export function ImportReview({ skills, skippedCount, onCancel }: ImportReviewPro
     <div className="space-y-6">
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-medium">
-              {skills.length} skill{skills.length === 1 ? "" : "s"} detected
-            </h2>
-            {skippedCount > 0 ? (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {skippedCount} file{skippedCount === 1 ? "" : "s"} in the ZIP weren&apos;t part of any
-                skill folder and were ignored.
-              </p>
-            ) : null}
-          </div>
+          <h2 className="text-sm font-medium">
+            {skills.length} skill{skills.length === 1 ? "" : "s"} detected in {fileName}
+          </h2>
           {!doneImporting ? (
             <Button type="button" variant="outline" size="sm" onClick={toggleAll} disabled={pending}>
               {allSelected ? "Deselect all" : "Select all"}
@@ -156,15 +159,31 @@ export function ImportReview({ skills, skippedCount, onCancel }: ImportReviewPro
         </ul>
 
         {!doneImporting ? (
-          <div className="space-y-2">
-            <span className="text-sm font-medium">Commit message</span>
-            <Input
-              value={commitMessage}
-              onChange={(e) => setCommitMessage(e.target.value)}
-              placeholder="Imported from ZIP"
-              disabled={pending}
-            />
-          </div>
+          <>
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Group tag</span>
+              <Input
+                value={groupTag}
+                onChange={(e) => setGroupTag(e.target.value)}
+                placeholder="e.g. my-skill-pack"
+                disabled={pending}
+              />
+              <p className="text-xs text-muted-foreground">
+                Langfuse groups skills with tags, not a parent/child hierarchy — this tags every
+                selected skill so they stay recognisable as one imported set. Clear it to skip tagging.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Commit message</span>
+              <Input
+                value={commitMessage}
+                onChange={(e) => setCommitMessage(e.target.value)}
+                placeholder="Imported from ZIP"
+                disabled={pending}
+              />
+            </div>
+          </>
         ) : null}
       </Card>
 
@@ -191,4 +210,12 @@ export function ImportReview({ skills, skippedCount, onCancel }: ImportReviewPro
       </div>
     </div>
   );
+}
+
+function suggestGroupTag(fileName: string): string {
+  const base = fileName.replace(/\.zip$/i, "");
+  return base
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }

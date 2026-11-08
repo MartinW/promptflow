@@ -64,6 +64,12 @@ export async function createSkillVersionAction(formData: FormData): Promise<Skil
 export interface ImportSkillInput {
   skillMd: string;
   files: SkillVersionFileInput[];
+  /**
+   * Langfuse has no parent/child skill concept — this is the stand-in for
+   * "these skills belong together": applied as a shared tag across every
+   * imported skill in the batch so they stay recognisable as one set.
+   */
+  tags?: string[];
   commitMessage?: string;
 }
 
@@ -101,6 +107,9 @@ export async function importSkillsAction(skills: ImportSkillInput[]): Promise<Im
         files: [{ path: "SKILL.md", content: skill.skillMd }, ...skill.files],
         commitMessage: skill.commitMessage,
       });
+      if (skill.tags && skill.tags.length > 0) {
+        await client.setSkillTags(frontmatter.name, skill.tags);
+      }
       results.push({ name: frontmatter.name, ok: true });
     } catch (err) {
       results.push({ name: frontmatter.name, ok: false, error: formatError(err) });
