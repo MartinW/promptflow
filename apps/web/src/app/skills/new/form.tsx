@@ -1,0 +1,277 @@
+"use client";
+
+import { parseSkillFrontmatter } from "@promptflow/core";
+import { useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { createSkillVersionAction } from "../actions";
+import { ImportReview } from "./import-review";
+import { MAX_ZIP_BYTES, type ParsedSkillZip, parseSkillZip } from "./parse-zip";
+
+const TEMPLATE = `---
+name: skill-name
+description: Describe when to use this skill.
+---
+Instructions for the agent.
+`;
+
+interface ExtraFile {
+  path: string;
+  content: string;
+}
+
+export function NewSkillForm() {
+  const [skillMd, setSkillMd] = useState(TEMPLATE);
+  const [extraFiles, setExtraFiles] = useState<ExtraFile[]>([]);
+  const [commitMessage, setCommitMessage] = useState("");
+  const [promote, setPromote] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [pending, startTransition] = useTransition();
+  const [zipPending, setZipPending] = useState(false);
+  const [multiImport, setMultiImport] = useState<{ parsed: ParsedSkillZip; fileName: string } | null>(
+    null,
+  );
+  const zipInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleZipChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file after an error
+    if (!file) return;
+
+    if (file.size > MAX_ZIP_BYTES) {
+      toast.error("ZIP too large", {
+        description: `${file.name} is ${(file.size / (1024 * 1024)).toFixed(1)} MiB — Langfuse's limit is 3 MiB before extraction.`,
+      });
+      return;
+    }
+
+    setZipPending(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const parsed = parseSkillZip(buffer);
+
+      if (parsed.skipped.length > 0) {
+        // Internal detail (unsupported file type, unsafe path, or just not
+        // under any detected skill folder) — not worth a UI affordance, but
+        // logged so it's inspectable if something unexpected got dropped.
+        console.log(
+          `[skills import] ${parsed.skipped.length} file(s) from ${file.name} were skipped:`,
+          parsed.skipped,
+        );
+      }
+
+      if (parsed.skills.length > 1) {
+        // Multiple SKILL.md found — hand off to the review/select screen
+        // instead of guessing which one to drop into the single-skill form.
+        setMultiImport({ parsed, fileName: file.name });
+        return;
+      }
+
+      const [skill] = parsed.skills;
+      setSkillMd(skill.skillMd);
+      setExtraFiles(skill.files);
+      setFieldErrors({});
+      toast.success(`Imported SKILL.md + ${skill.files.length} file(s) from ${file.name}`);
+    } catch (err) {
+      toast.error("Couldn't read ZIP", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setZipPending(false);
+    }
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setFieldErrors({});
+
+    if (!parseSkillFrontmatter(skillMd)) {
+      setFieldErrors({
+        skillMd: "SKILL.md must start with a --- frontmatter block containing name and description",
+      });
+      return;
+    }
+
+    const fd = new FormData();
+    fd.set("skillMd", skillMd);
+    fd.set("extraFiles", JSON.stringify(extraFiles));
+    fd.set("commitMessage", commitMessage);
+    if (promote) fd.set("promote", "on");
+
+    startTransition(async () => {
+      const result = await createSkillVersionAction(fd);
+      if (!result.ok) {
+        setError(result.error ?? null);
+        setFieldErrors(result.fieldErrors ?? {});
+        toast.error("Couldn't create skill", { description: result.error ?? "Check the form for issues" });
+      }
+    });
+  }
+
+  function addFile() {
+    setExtraFiles((prev) => [...prev, { path: "", content: "" }]);
+  }
+
+  function updateFile(index: number, patch: Partial<ExtraFile>) {
+    setExtraFiles((prev) => prev.map((f, i) => (i === index ? { ...f, ...patch } : f)));
+  }
+
+  function removeFile(index: number) {
+    setExtraFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  if (multiImport) {
+    return (
+      <ImportReview
+        skills={multiImport.parsed.skills}
+        fileName={multiImport.fileName}
+        onCancel={() => setMultiImport(null)}
+      />
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card className="p-5 space-y-5">
+        <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-border p-3">
+          <p className="text-xs text-muted-foreground">
+            Have a skill folder already? Upload a <span className="font-mono">.zip</span> containing{" "}
+            <span className="font-mono">SKILL.md</span> (and any supporting files) to fill in the form
+            below — or a ZIP with multiple skill folders to review and import several at once.
+          </p>
+          <input
+            ref={zipInputRef}
+            type="file"
+            accept=".zip,application/zip"
+            className="hidden"
+            onChange={handleZipChange}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => zipInputRef.current?.click()}
+            disabled={pending || zipPending}
+          >
+            {zipPending ? "Reading..." : "Upload ZIP"}
+          </Button>
+        </div>
+
+        <Field label="SKILL.md" hint="Must start with a --- frontmatter block (name, description)" error={fieldErrors.skillMd}>
+          <Textarea
+            value={skillMd}
+            onChange={(e) => setSkillMd(e.target.value)}
+            disabled={pending}
+            rows={16}
+            className="font-mono text-sm"
+            required
+          />
+        </Field>
+
+        <Field label="Commit message" hint="Optional">
+          <Input
+            value={commitMessage}
+            onChange={(e) => setCommitMessage(e.target.value)}
+            placeholder="Initial version"
+            disabled={pending}
+          />
+        </Field>
+
+        <label className="flex items-start gap-3 pt-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={promote}
+            onChange={(e) => setPromote(e.target.checked)}
+            disabled={pending}
+            className="mt-1 size-4 accent-primary"
+          />
+          <span className="text-sm">
+            <span className="font-medium block">Promote to production</span>
+            <span className="text-xs text-muted-foreground">
+              Off by default. Saves as v1 with no label — promote later when ready.
+            </span>
+          </span>
+        </label>
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium">Supporting files</h2>
+          <Button type="button" variant="outline" size="sm" onClick={addFile} disabled={pending}>
+            + Add file
+          </Button>
+        </div>
+        {extraFiles.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Optional. Add any additional files referenced from SKILL.md&apos;s instructions.
+          </p>
+        ) : null}
+        {extraFiles.map((file, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, no stable id until saved
+          <div key={i} className="space-y-2 rounded-md border border-border p-3">
+            <div className="flex items-center gap-2">
+              <Input
+                value={file.path}
+                onChange={(e) => updateFile(i, { path: e.target.value })}
+                placeholder="references/example.md"
+                disabled={pending}
+                className="font-mono text-sm"
+              />
+              <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(i)} disabled={pending}>
+                Remove
+              </Button>
+            </div>
+            <Textarea
+              value={file.content}
+              onChange={(e) => updateFile(i, { content: e.target.value })}
+              disabled={pending}
+              rows={6}
+              className="font-mono text-sm"
+            />
+          </div>
+        ))}
+      </Card>
+
+      {error ? (
+        <Card className="px-5 py-4 border-red-500/30 bg-red-500/5 text-sm">
+          <p className="font-medium text-red-600 dark:text-red-400">Couldn&apos;t create skill</p>
+          <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1 font-mono break-all">{error}</p>
+        </Card>
+      ) : null}
+
+      <div className="flex justify-end gap-3">
+        <Button type="submit" disabled={pending}>
+          {pending ? "Creating..." : "Create skill"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm font-medium">{label}</span>
+        {hint && !error ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      </div>
+      {children}
+      {error ? <p className="text-xs text-red-600 dark:text-red-400">{error}</p> : null}
+    </div>
+  );
+}
